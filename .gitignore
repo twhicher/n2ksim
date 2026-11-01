@@ -1,0 +1,4 @@
+/target
+/.playwright-mcp
+config/network.json
+.DS_Store

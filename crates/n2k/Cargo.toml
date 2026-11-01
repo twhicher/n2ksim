@@ -1,0 +1,9 @@
+[package]
+name = "n2k"
+description = "NMEA 2000 over CAN: identifiers, NAME, fast packet, PGN fields, gateway and candump text formats. No dependencies."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]

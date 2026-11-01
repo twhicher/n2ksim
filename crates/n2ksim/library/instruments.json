@@ -1,0 +1,2869 @@
+[
+  {
+    "key": "bg_ws310",
+    "make": "B&G",
+    "model": "WS310 wired wind sensor + interface",
+    "category": "Wind",
+    "kind": "wind",
+    "summary": "Wired masthead wind sensor. The sensor sends NMEA 0183 down the mast; the WS310 (wired) Interface 000-14389-001 at the mast base is the NMEA 2000 device.",
+    "native_n2k": false,
+    "via": "WS310 (wired) Interface 000-14389-001",
+    "manufacturer_code": 381,
+    "len": 1,
+    "tx": [
+      {
+        "pgn": 130306,
+        "interval_ms": 100,
+        "variant": "apparent",
+        "note": "From one reader's bench test reported on Panbo, not a B&G document. Matches B&G's stated sensor rate (MWV,R at 10 Hz). Apparent reference inferred from MWV,R being relative wind."
+      }
+    ],
+    "settings": [
+      {
+        "name": "Use mast rotation",
+        "default": "OFF",
+        "effect": "Corrects wind for mast angle at the interface; needs mast rotation data on the network."
+      },
+      {
+        "name": "Apply heel correction",
+        "default": "OFF",
+        "effect": "Corrects wind speed and angle for heel; needs a heel sensor such as a Precision-9."
+      },
+      {
+        "name": "Wind angle calibration",
+        "default": null,
+        "effect": "Set from a compatible display."
+      }
+    ],
+    "notes": "With an H5000 the sensor can instead be wired to an NMEA 0183 port on the CPU, which then puts wind on the bus. B&G's brief listed NMEA 2000 certification as pending (June 2018). Sensor and interface each draw 15 mA at 12 V.",
+    "gaps": [
+      "B&G publishes no PGN list",
+      "PGNs received for mast rotation and heel",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "B&G product page (1 LEN)",
+        "url": "https://www.bandg.com/bg/type/instrument-sensors-and-transducers/wind-sensors/ws310-wired-interface/"
+      },
+      {
+        "what": "WS300 product brief (settings, defaults)",
+        "url": "https://www.nautiboutique.fr/wp-content/uploads/2018/07/Bg-WS300-Product-Brief-3.pdf"
+      },
+      {
+        "what": "WS310 installation guide (MWV,R at 10 Hz)",
+        "url": "https://www.thitronik-marine.com/fileadmin/user_upload/tm/products/28_B_G/01_Wind/Manuals/WS310_IG_EN_988-12013-001_w_2018-05-30.pdf"
+      },
+      {
+        "what": "Panbo (130306 at 10 Hz, reader test)",
+        "url": "https://panbo.com/new-bg-ws300-wired-wireless-nmea-2000-wind-sensors-no-n2k-mast-cable-needed/"
+      }
+    ],
+    "appearance": {
+      "form": "wand",
+      "h_mm": 330,
+      "d_mm": 50,
+      "arm_mm": 500,
+      "notes": "Masthead sensor, 500 by 330 by 50 mm, which Navico calls approximate, for product scale only. The NMEA 2000 device is the in-line interface, 90 by 20 by 10 mm, also approximate",
+      "sources": [
+        {
+          "what": "Navico WS300 product brief (retailer copy)",
+          "url": "https://www.nautiboutique.fr/wp-content/uploads/2018/07/Bg-WS300-Product-Brief-3.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "bg_ws320",
+    "make": "B&G",
+    "model": "WS320 wireless wind sensor + interface",
+    "category": "Wind",
+    "kind": "wind",
+    "summary": "Wireless masthead wind sensor. Bluetooth to the WS320 (wireless) Interface 000-14388-001, which is the NMEA 2000 device.",
+    "native_n2k": false,
+    "via": "WS320 (wireless) Interface 000-14388-001",
+    "manufacturer_code": 381,
+    "len": 2,
+    "tx": [
+      {
+        "pgn": 130306,
+        "interval_ms": 200,
+        "variant": "apparent",
+        "inferred": true,
+        "note": "B&G states apparent wind speed and angle at 5 Hz but does not name the PGN; 130306 is our inference."
+      }
+    ],
+    "settings": [
+      {
+        "name": "Use mast rotation",
+        "default": "OFF",
+        "effect": "As for the WS310 interface."
+      },
+      {
+        "name": "Apply heel correction",
+        "default": "OFF",
+        "effect": "As for the WS310 interface."
+      }
+    ],
+    "notes": "The interface draws 1.2 W. Pairing is automatic at power-up with the sensor close to the interface; removing the battery loses it. A Panbo commenter reports the sensor sleeps when the network is off.",
+    "gaps": [
+      "PGN not named by B&G",
+      "PGNs received",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "B&G product page (2 LEN)",
+        "url": "https://www.bandg.com/bg/type/instrument-sensors-and-transducers/wind-sensors/ws320-wireless-interface/"
+      },
+      {
+        "what": "WS320 installation guide (5 Hz, 100 mA)",
+        "url": "https://media1.svb-media.de/media/snr/520992/pdf/manual_2023-05-22_09-22-08_e771bd7156e2387530d983f803c24d5c.pdf"
+      },
+      {
+        "what": "WS300 product brief",
+        "url": "https://www.nautiboutique.fr/wp-content/uploads/2018/07/Bg-WS300-Product-Brief-3.pdf"
+      }
+    ],
+    "appearance": {
+      "form": "wand",
+      "h_mm": 330,
+      "d_mm": 50,
+      "arm_mm": 500,
+      "notes": "Same body as the WS310, approximate figures. The interface is a 90 mm by 38 mm dome",
+      "sources": [
+        {
+          "what": "Navico WS300 product brief (retailer copy)",
+          "url": "https://www.nautiboutique.fr/wp-content/uploads/2018/07/Bg-WS300-Product-Brief-3.pdf"
+        },
+        {
+          "what": "WS320 installation guide (retailer copy)",
+          "url": "https://media1.svb-media.de/media/snr/520992/pdf/manual_2023-05-22_09-22-08_e771bd7156e2387530d983f803c24d5c.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "airmar_dst810",
+    "make": "Airmar",
+    "model": "DST810 smart multisensor",
+    "category": "Depth, speed, temperature",
+    "kind": "dst",
+    "summary": "Through-hull depth, speed, temperature and heel/trim sensor, native NMEA 2000. All calibration is stored in the sensor.",
+    "native_n2k": true,
+    "manufacturer_code": 135,
+    "len": 3,
+    "tx": [
+      {
+        "pgn": 127257,
+        "note": "Heel and trim. Airmar's sensor update rate is 10 per second; the PGN interval is not published."
+      },
+      {
+        "pgn": 128259,
+        "note": "Sensor update 5 per second; PGN interval not published."
+      },
+      {
+        "pgn": 128267,
+        "note": "Depth and offset both filled. Sensor update once a second."
+      },
+      {
+        "pgn": 128275
+      },
+      {
+        "pgn": 130310,
+        "variant": "sea",
+        "note": "Water temperature."
+      },
+      {
+        "pgn": 130311,
+        "variant": "sea",
+        "note": "Water temperature."
+      },
+      {
+        "pgn": 130312,
+        "variant": "sea",
+        "note": "Water temperature; Panbo suggests turning it off if no older display needs it."
+      },
+      {
+        "pgn": 130316,
+        "variant": "sea"
+      },
+      {
+        "pgn": 126720,
+        "note": "Proprietary: attitude offsets and filter, speed heel correction."
+      },
+      {
+        "pgn": 59392
+      },
+      {
+        "pgn": 60928
+      },
+      {
+        "pgn": 126208
+      },
+      {
+        "pgn": 126464
+      },
+      {
+        "pgn": 126993
+      },
+      {
+        "pgn": 126996
+      },
+      {
+        "pgn": 126998
+      }
+    ],
+    "settings": [
+      {
+        "name": "Per-PGN on/off and refresh rate",
+        "default": null,
+        "effect": "Through Airmar's CAST app."
+      },
+      {
+        "name": "Depth offset",
+        "default": null,
+        "effect": "Carried in 128267's offset: positive to the surface, negative to the keel."
+      },
+      {
+        "name": "Speed calibration, basic",
+        "default": null,
+        "effect": "One percentage."
+      },
+      {
+        "name": "Speed calibration, heel-compensated",
+        "default": null,
+        "effect": "Several speeds at several heel angles, port and starboard separately."
+      },
+      {
+        "name": "Device instance",
+        "default": null,
+        "effect": "Settable from a display."
+      }
+    ],
+    "notes": "Airmar lists supported PGNs without saying which are sent and which received; ISO Request (59904) and Commanded Address (65240) are presumably received. Supply under 200 mA, which does not quite match LEN 3 (150 mA).",
+    "gaps": [
+      "PGN transmit intervals",
+      "received PGN list",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "DST810 brochure (PGNs, LEN, update rates)",
+        "url": "https://www.airmarweb.com/uploads/brochures/DST810.pdf"
+      },
+      {
+        "what": "Airmar product data",
+        "url": "https://www.airmar.com/api/v1/products/67bb71fa-a0d8-440f-bf3f-ac3300efadb2?expand=documents,specifications,attributes"
+      },
+      {
+        "what": "Installation guide 17-435-01 (calibration)",
+        "url": "https://productimageserver.com/literature/installations/100601IN.pdf"
+      },
+      {
+        "what": "Panbo review (PGN settings, offset convention)",
+        "url": "https://panbo.com/airmar-dst810-multisensor-really-smart/"
+      }
+    ],
+    "appearance": {
+      "form": "thruhull",
+      "h_mm": 125,
+      "diameter_mm": 75,
+      "notes": "Flange 75 mm, housing 125 mm long",
+      "sources": [
+        {
+          "what": "Airmar DST810 datasheet (distributor copy)",
+          "url": "https://www.brommeland.no/file/standardmappe-uni/dst810.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "airmar_220wx",
+    "make": "Airmar",
+    "model": "220WX WeatherStation (NMEA 2000)",
+    "category": "Weather",
+    "kind": "weather",
+    "summary": "Ultrasonic wind, air temperature, pressure, GNSS and compass in one unit, native NMEA 2000. Discontinued.",
+    "native_n2k": true,
+    "manufacturer_code": 135,
+    "tx": [
+      {
+        "pgn": 126992
+      },
+      {
+        "pgn": 127250,
+        "note": "Heading reference not stated; simulated as magnetic."
+      },
+      {
+        "pgn": 127251
+      },
+      {
+        "pgn": 127257
+      },
+      {
+        "pgn": 127258
+      },
+      {
+        "pgn": 129025
+      },
+      {
+        "pgn": 129026
+      },
+      {
+        "pgn": 129029
+      },
+      {
+        "pgn": 129033
+      },
+      {
+        "pgn": 129044
+      },
+      {
+        "pgn": 129538
+      },
+      {
+        "pgn": 129539
+      },
+      {
+        "pgn": 129540
+      },
+      {
+        "pgn": 130306,
+        "variant": "apparent"
+      },
+      {
+        "pgn": 130306,
+        "variant": "true_water",
+        "note": "Airmar says it computes both apparent and true wind; true uses boat speed (128259) when available."
+      },
+      {
+        "pgn": 130310
+      },
+      {
+        "pgn": 130311
+      },
+      {
+        "pgn": 130312,
+        "note": "Which PGN carries air temperature by default is not documented."
+      },
+      {
+        "pgn": 130313,
+        "note": "Only with the optional humidity module."
+      },
+      {
+        "pgn": 130314
+      },
+      {
+        "pgn": 130323
+      },
+      {
+        "pgn": 59392
+      },
+      {
+        "pgn": 60928
+      },
+      {
+        "pgn": 126208
+      },
+      {
+        "pgn": 126464
+      },
+      {
+        "pgn": 126996
+      },
+      {
+        "pgn": 126998
+      }
+    ],
+    "rx": [
+      128259
+    ],
+    "settings": [
+      {
+        "name": "Per-PGN enable, interval and priority",
+        "default": "factory defaults, not published",
+        "effect": "Through Airmar's WeatherCaster software. Only a preselected subset is sent by default."
+      },
+      {
+        "name": "Wind damping",
+        "default": null,
+        "effect": "User configurable."
+      },
+      {
+        "name": "True wind uses COG",
+        "default": null,
+        "effect": "Unchecked, uses the internal compass heading."
+      }
+    ],
+    "notes": "Has an internal 10 Hz GPS and three-axis compass. Heater models (220WXH) cannot be used on NMEA 2000.",
+    "gaps": [
+      "LEN: Airmar's product page says 2, its owner's guide says 4",
+      "PGN transmit intervals",
+      "which PGNs are on by default",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "Airmar product page",
+        "url": "https://www.airmar.com/Product/220WX"
+      },
+      {
+        "what": "WX Series marine sheet (PGNs, LEN 2)",
+        "url": "https://assets-7484b3de52.cdn.insitecloud.net/7c920f7ddbda167/WX_MARINE_APP.pdf"
+      },
+      {
+        "what": "Owner's guide 17-461-01 (128259 input, LEN 4)",
+        "url": "https://d3fyi2ud8f6h0p.cloudfront.net/userfiles/documents/d/doc%2520116-d-17-461-01-1-17-1.pdf"
+      },
+      {
+        "what": "WeatherCaster guide 17-460-01 (settings)",
+        "url": "https://d3fyi2ud8f6h0p.cloudfront.net/userfiles/documents/1/17-460-01.pdf"
+      }
+    ],
+    "appearance": {
+      "form": "ultrasonic",
+      "h_mm": 131,
+      "diameter_mm": 72,
+      "sources": [
+        {
+          "what": "Airmar WX Series brochure (retailer copy)",
+          "url": "https://defender.ca/assets/pdf/airmar/220wx_broch.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "calypso_ulp_n2k",
+    "make": "Calypso Instruments",
+    "model": "ULP NMEA2000 ultrasonic wind meter",
+    "category": "Wind",
+    "kind": "wind",
+    "summary": "Low-power ultrasonic wind sensor that plugs straight into NMEA 2000. Factory calibrated. Aimed at daysailers and cruisers, not racing.",
+    "native_n2k": true,
+    "manufacturer_code": 1065,
+    "device_class": 85,
+    "device_function": 130,
+    "tx": [
+      {
+        "pgn": 130306,
+        "interval_ms": 1000,
+        "variant": "apparent",
+        "note": "1 Hz output. The wind reference is not stated; simulated as apparent."
+      },
+      {
+        "pgn": 59392
+      },
+      {
+        "pgn": 60928
+      },
+      {
+        "pgn": 126208
+      },
+      {
+        "pgn": 126464
+      },
+      {
+        "pgn": 126993
+      },
+      {
+        "pgn": 126996
+      },
+      {
+        "pgn": 126998
+      }
+    ],
+    "notes": "20 mA at 12 V. 1 Hz is slow for an autopilot in wind modes.",
+    "gaps": [
+      "LEN",
+      "received PGN list",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "User manual v1.0 (PGNs, class and function)",
+        "url": "https://maritimo.at/media/ba/75/8c/1705845255/ulp-nmea2000-user-manual-eng-v-1.pdf"
+      },
+      {
+        "what": "Data sheet (1 Hz, 20 mA)",
+        "url": "https://maritimo.at/media/d7/06/24/1705844958/23_en_ultrasonic_nmea2000_data_sheet.pdf"
+      },
+      {
+        "what": "Panbo review",
+        "url": "https://panbo.com/calypso-instruments-ultrasonic-nmea-2000-wind-meter-plug-and-play-wind/"
+      }
+    ],
+    "appearance": {
+      "form": "ultrasonic",
+      "h_mm": 74,
+      "diameter_mm": 70,
+      "notes": "Black machined plastic",
+      "sources": [
+        {
+          "what": "Calypso product page",
+          "url": "https://www.calypsoinstruments.com/shop/cmi1035-ultra-low-power-ultrasonic-wind-meter-nmea2000-290"
+        }
+      ]
+    }
+  },
+  {
+    "key": "lcj_cv7c_windyplug",
+    "make": "LCJ Capteurs",
+    "model": "CV7-C + WindyPlug",
+    "category": "Wind",
+    "kind": "wind",
+    "summary": "Ultrasonic racing wind sensor (NMEA 0183) with the WindyPlug interface on the backbone, which also has a barometric sensor.",
+    "native_n2k": false,
+    "via": "WindyPlug NMEA 2000 interface",
+    "manufacturer_code": 499,
+    "len": 1,
+    "tx": [
+      {
+        "pgn": 130306,
+        "variant": "apparent",
+        "note": "Reference not stated; simulated as apparent."
+      },
+      {
+        "pgn": 130312,
+        "variant": "air",
+        "inferred": true,
+        "note": "Listed by LCJ; carrying the sensor's air temperature is our inference."
+      },
+      {
+        "pgn": 130314,
+        "inferred": true,
+        "note": "Listed by LCJ; carrying the WindyPlug's barometric pressure is our inference."
+      },
+      {
+        "pgn": 59904
+      },
+      {
+        "pgn": 60928
+      },
+      {
+        "pgn": 126464
+      },
+      {
+        "pgn": 126996
+      }
+    ],
+    "rx": [
+      59392,
+      59904,
+      60928,
+      130315
+    ],
+    "notes": "LCJ markets the CV7-C for offshore racing as twice as fast as the CV7, without a figure. The WindyPlug draws under 50 mA.",
+    "gaps": [
+      "PGN transmit intervals",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "LCJ Capteurs product page (PGNs, 1 LEN)",
+        "url": "https://lcjcapteurs.com/en/girouette-anemometres-capteur-vent/cv7-c-windyplug/"
+      }
+    ],
+    "appearance": {
+      "form": "ultrasonic",
+      "h_mm": 41,
+      "diameter_mm": 64,
+      "arm_mm": 700,
+      "notes": "Sensor head on a 700 mm carbon pole. The WindyPlug is 81 mm long and 17.5 mm across in the manual, 135 mm long in the catalogue",
+      "sources": [
+        {
+          "what": "LCJ user manual 18/01/2021",
+          "url": "https://lcjcapteurs.com/wp-content/uploads/2021/03/LCJ-Capteurs_UserManual-CV7_ENG_18012021.pdf"
+        },
+        {
+          "what": "LCJ catalogue 11/2021",
+          "url": "https://lcjcapteurs.com/wp-content/uploads/2021/11/brochureweb/LCJ_Capteurs_Marine_Catalogue_ANG_112021.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "garmin_gps19x_n2k",
+    "make": "Garmin",
+    "model": "GPS 19x NMEA 2000",
+    "category": "GNSS",
+    "kind": "gnss",
+    "summary": "GNSS antenna and receiver (GPS and GLONASS), native NMEA 2000. Position only: no heading.",
+    "native_n2k": true,
+    "manufacturer_code": 229,
+    "len": 2,
+    "tx": [
+      {
+        "pgn": 126992
+      },
+      {
+        "pgn": 129025,
+        "note": "Garmin gives 10 Hz for position, velocity and time without mapping it to PGNs; canboat's usual interval is used."
+      },
+      {
+        "pgn": 129026,
+        "note": "Same 10 Hz caveat."
+      },
+      {
+        "pgn": 129029
+      },
+      {
+        "pgn": 129539
+      },
+      {
+        "pgn": 129540
+      },
+      {
+        "pgn": 59392
+      },
+      {
+        "pgn": 60928
+      },
+      {
+        "pgn": 126208
+      },
+      {
+        "pgn": 126464
+      },
+      {
+        "pgn": 126996
+      }
+    ],
+    "rx": [
+      59392,
+      59904,
+      60928,
+      126208
+    ],
+    "settings": [
+      {
+        "name": "WAAS/EGNOS",
+        "default": null,
+        "effect": "SBAS for better position."
+      },
+      {
+        "name": "Speed filter",
+        "default": null,
+        "effect": "Averages for smoother position; Garmin suggests turning it off at higher speed."
+      },
+      {
+        "name": "GLONASS",
+        "default": null,
+        "effect": "Uses GLONASS satellites."
+      }
+    ],
+    "notes": "Settings are made from a Garmin display's NMEA 2000 menu. LEN 2 (100 mA) at 9 V; 40 mA at 12 V.",
+    "gaps": [
+      "PGN transmit intervals",
+      "setting defaults",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "Garmin installation instructions (PGNs, LEN, settings)",
+        "url": "https://static.garmin.com/pumac/GPS19x_NMEA2000_Installation_EN-US.pdf"
+      },
+      {
+        "what": "Garmin Peru product page (10 Hz)",
+        "url": "https://garmin.com.pe/producto/gps-19x-2000/"
+      }
+    ],
+    "appearance": {
+      "form": "dome",
+      "h_mm": 49.5,
+      "diameter_mm": 91.6,
+      "notes": "Drawn as a dome; Garmin gives diameter and height",
+      "sources": [
+        {
+          "what": "Garmin installation instructions",
+          "url": "https://static.garmin.com/pumac/GPS19x_NMEA2000_Installation_EN-US.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "bg_zg100",
+    "make": "B&G",
+    "model": "ZG100 GPS and heading sensor",
+    "category": "GNSS",
+    "kind": "gnss",
+    "summary": "GPS antenna with a built-in heading sensor, native NMEA 2000. Same hardware family as the Simrad GS25 and Lowrance Point-1.",
+    "native_n2k": true,
+    "manufacturer_code": 381,
+    "tx": [
+      {
+        "pgn": 126992
+      },
+      {
+        "pgn": 129025,
+        "note": "Position update rate up to 10 Hz (1, 5 or 10); PGN mapping not stated."
+      },
+      {
+        "pgn": 129026
+      },
+      {
+        "pgn": 129029
+      },
+      {
+        "pgn": 129539
+      },
+      {
+        "pgn": 129540
+      },
+      {
+        "pgn": 127258
+      },
+      {
+        "pgn": 127250,
+        "variant": "magnetic",
+        "inferred": true,
+        "note": "The guide does not say true or magnetic. Simulated as magnetic because the heading comes from a compass and the unit also sends variation (127258)."
+      },
+      {
+        "pgn": 127251
+      },
+      {
+        "pgn": 127257
+      }
+    ],
+    "settings": [
+      {
+        "name": "Heading calibration",
+        "default": null,
+        "effect": "Two 360 degree turns after power-up, then a 390 degree turn."
+      },
+      {
+        "name": "Compass source",
+        "default": null,
+        "effect": "Chosen on the display when several are fitted."
+      }
+    ],
+    "notes": "Heading accuracy ±3°. Navico recommends a Precision-9 instead for demanding uses such as an autopilot. Under 100 mA at 12 V.",
+    "gaps": [
+      "LEN",
+      "received PGN list",
+      "PGN transmit intervals",
+      "heading reference",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "Navico installation guide 988-10439-003 (dealer copy)",
+        "url": "https://sailing-yacht.de/wp-content/uploads/2023/11/GPS-Compass_IG_EN_988-10439-003_w_Installation_guide.pdf"
+      },
+      {
+        "what": "Earlier revision 988-10439-002 (retailer copy)",
+        "url": "https://media1.svb-media.de/media/snr/506960/pdf/manual_2017-01-17_11-09-03_74c05b5736bb1782403f7c0288d86879.pdf"
+      }
+    ],
+    "appearance": {
+      "form": "dome",
+      "h_mm": 38,
+      "diameter_mm": 90,
+      "sources": [
+        {
+          "what": "Navico installation guide 988-10439-003 (retailer copy)",
+          "url": "https://sailing-yacht.de/wp-content/uploads/2023/11/GPS-Compass_IG_EN_988-10439-003_w_Installation_guide.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "furuno_scx20",
+    "make": "Furuno",
+    "model": "SCX-20 satellite compass",
+    "category": "GNSS heading",
+    "kind": "gnss",
+    "summary": "Dual-antenna GNSS compass with motion sensing, native NMEA 2000. Every output PGN has its own rate setting.",
+    "native_n2k": true,
+    "manufacturer_code": 1855,
+    "len": 4,
+    "tx": [
+      {
+        "pgn": 127250,
+        "interval_ms": 100,
+        "variant": "true",
+        "inferred": true,
+        "note": "Rate adjustable 20 to 2000 ms. Furuno does not state true or magnetic; GNSS heading is true by nature, so simulated as true."
+      },
+      {
+        "pgn": 127251,
+        "interval_ms": 100,
+        "note": "20 to 2000 ms."
+      },
+      {
+        "pgn": 127252,
+        "interval_ms": 100,
+        "note": "20 to 2000 ms."
+      },
+      {
+        "pgn": 127257,
+        "interval_ms": 100,
+        "note": "20 to 2000 ms."
+      },
+      {
+        "pgn": 127258,
+        "interval_ms": 1000
+      },
+      {
+        "pgn": 129025,
+        "interval_ms": 100
+      },
+      {
+        "pgn": 129026,
+        "interval_ms": 250
+      },
+      {
+        "pgn": 129029,
+        "interval_ms": 1000
+      },
+      {
+        "pgn": 126992,
+        "interval_ms": 1000
+      },
+      {
+        "pgn": 129538
+      },
+      {
+        "pgn": 129539,
+        "interval_ms": 1000
+      },
+      {
+        "pgn": 129540,
+        "interval_ms": 1000
+      },
+      {
+        "pgn": 130310,
+        "interval_ms": 500,
+        "note": "Content not stated."
+      },
+      {
+        "pgn": 130312,
+        "interval_ms": 1000,
+        "variant": "air",
+        "note": "The operator's manual gives 1000 ms, the SC Setting Tool manual 2000 ms. Content not stated; simulated as air temperature."
+      },
+      {
+        "pgn": 130314,
+        "interval_ms": 2000
+      },
+      {
+        "pgn": 130316,
+        "interval_ms": 2000,
+        "variant": "air",
+        "note": "Content not stated; simulated as air temperature."
+      },
+      {
+        "pgn": 130577,
+        "interval_ms": 1000,
+        "note": "Speed is output at most every 200 ms even when faster is set."
+      },
+      {
+        "pgn": 130578,
+        "interval_ms": 250
+      },
+      {
+        "pgn": 65280,
+        "interval_ms": 100,
+        "note": "Furuno proprietary heave."
+      },
+      {
+        "pgn": 130842,
+        "interval_ms": 100,
+        "note": "Furuno proprietary 'Six Degrees of Freedom Movement'. Layout known only from canboat (reverse-engineered, incomplete); Furuno declined to publish it."
+      },
+      {
+        "pgn": 130843,
+        "interval_ms": 100,
+        "note": "Furuno proprietary heel angle and roll."
+      },
+      {
+        "pgn": 130845,
+        "interval_ms": 1000
+      },
+      {
+        "pgn": 130846,
+        "interval_ms": 1000
+      },
+      {
+        "pgn": 130816
+      },
+      {
+        "pgn": 130817
+      },
+      {
+        "pgn": 130818
+      },
+      {
+        "pgn": 130819
+      },
+      {
+        "pgn": 130822
+      },
+      {
+        "pgn": 130823
+      },
+      {
+        "pgn": 130833
+      },
+      {
+        "pgn": 130834
+      },
+      {
+        "pgn": 130847
+      },
+      {
+        "pgn": 61184
+      },
+      {
+        "pgn": 126720
+      },
+      {
+        "pgn": 126993,
+        "interval_ms": 60000
+      },
+      {
+        "pgn": 59392
+      },
+      {
+        "pgn": 59904
+      },
+      {
+        "pgn": 60928
+      },
+      {
+        "pgn": 126208
+      },
+      {
+        "pgn": 126464
+      },
+      {
+        "pgn": 126996
+      },
+      {
+        "pgn": 126998
+      }
+    ],
+    "rx": [
+      59392,
+      59904,
+      60160,
+      60416,
+      60928,
+      61184,
+      65240,
+      126208,
+      126720,
+      130847
+    ],
+    "settings": [
+      {
+        "name": "PGN transmit rate",
+        "default": "per PGN, see above",
+        "effect": "Rate in ms, or off. Furuno warns that too many fast PGNs can cause output problems."
+      },
+      {
+        "name": "Heading offset",
+        "default": "0.0°",
+        "effect": "-180 to 180°."
+      },
+      {
+        "name": "Pitch and roll offsets",
+        "default": "0.0°",
+        "effect": "-10 to 10°."
+      },
+      {
+        "name": "SOG/COG smoothing",
+        "default": "5 s",
+        "effect": "0 to 9999 s."
+      },
+      {
+        "name": "Rate of turn smoothing",
+        "default": "2 s",
+        "effect": "0 to 30 s."
+      },
+      {
+        "name": "DR time",
+        "default": "5 min",
+        "effect": "How long heading continues by dead reckoning after losing satellites; then heading stops."
+      }
+    ],
+    "notes": "Heading 0.5° rms dynamic. Attitude updates up to 50 Hz, position up to 10 Hz. About 60 s to settle heading at start-up. The autopilot plan's note on canboat's motion quirks file concerns this unit's PGN 130842.",
+    "gaps": [
+      "heading reference and whether deviation and variation are filled",
+      "official layouts of the proprietary PGNs",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "Furuno SCX-20 operator's manual (PGNs, rates, LEN, settings)",
+        "url": "https://www.furunousa.com/-/media/sites/furuno/document_library/documents/manuals/public_manuals/scx20_operators_manual.pdf"
+      },
+      {
+        "what": "Furuno SC Setting Tool manual (defaults)",
+        "url": "https://www.furunousa.com/-/media/sites/furuno/document_library/documents/manuals/public_manuals/sc_tool_operators_manual_for_sc33_scx20_scx21.pdf"
+      },
+      {
+        "what": "canboat (proprietary PGN names, reverse-engineered)",
+        "url": "https://github.com/canboat/canboat/blob/master/docs/canboat.json"
+      },
+      {
+        "what": "Furuno forum: proprietary layouts not published (2025)",
+        "url": "https://furunousaforum.com/threads/pgns-130578-130842-130843-and-130846.21720"
+      }
+    ],
+    "appearance": {
+      "form": "dome",
+      "w_mm": 194,
+      "h_mm": 74,
+      "d_mm": 250,
+      "notes": "A rounded-square dome, 250 by 194 by 74 mm; which side faces forward is read from the drawing's bow mark",
+      "sources": [
+        {
+          "what": "Furuno operator's manual, outline drawing (retailer copy)",
+          "url": "https://defender.com/assets/pdf/furuno/scx20_operators_manual.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "airmar_h2183",
+    "make": "Airmar",
+    "model": "H2183 heading sensor",
+    "category": "Heading",
+    "kind": "compass",
+    "summary": "Solid-state heading, rate of turn and attitude sensor, native NMEA 2000. Rates are changeable over the bus and kept after power-off.",
+    "native_n2k": true,
+    "manufacturer_code": 135,
+    "len": 2,
+    "tx": [
+      {
+        "pgn": 127250,
+        "interval_ms": 100,
+        "variant": "magnetic",
+        "note": "Magnetic, corrected for deviation. Fills variation only after it receives 127258 (not simulated). Up to 20 Hz."
+      },
+      {
+        "pgn": 127251,
+        "interval_ms": 100,
+        "note": "Up to 20 Hz."
+      },
+      {
+        "pgn": 127257,
+        "interval_ms": 1000,
+        "note": "Up to 20 Hz."
+      },
+      {
+        "pgn": 65285
+      },
+      {
+        "pgn": 65287
+      },
+      {
+        "pgn": 65410
+      },
+      {
+        "pgn": 130944
+      },
+      {
+        "pgn": 126720
+      },
+      {
+        "pgn": 59392
+      },
+      {
+        "pgn": 60928
+      },
+      {
+        "pgn": 126208
+      },
+      {
+        "pgn": 126464
+      },
+      {
+        "pgn": 126996
+      },
+      {
+        "pgn": 126998
+      }
+    ],
+    "rx": [
+      59904,
+      60928,
+      65286,
+      126208,
+      126720,
+      127258
+    ],
+    "settings": [
+      {
+        "name": "PGN interval",
+        "default": "127250 100 ms, 127251 100 ms, 127257 1000 ms",
+        "effect": "Set with 126208, saved."
+      },
+      {
+        "name": "Pitch and roll damping",
+        "default": "1.5 s",
+        "effect": "Airmar proprietary setting."
+      },
+      {
+        "name": "Compass auto-calibration",
+        "default": null,
+        "effect": "Heading stops while it runs."
+      }
+    ],
+    "notes": "Defaults come from a 2010 Airmar user manual (rev 1.000) covering the GH2183 family; firmware may have changed since.",
+    "gaps": [
+      "LEN: the 2015 spec sheet says 1, the 2018 owner's guide 2 (2 used)",
+      "what goes in the deviation field",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "Airmar user manual (tables, defaults; archived copy)",
+        "url": "http://web.archive.org/web/20210924205914/https://www.airmar.com/uploads/installguide/GCR200UserManual.pdf"
+      },
+      {
+        "what": "H2183 spec sheet rev U (LEN 1; retailer copy)",
+        "url": "https://defender.ca/assets/pdf/airmar/h2183.pdf"
+      },
+      {
+        "what": "H2183 owner's guide 17-472-01 rev 07 (LEN 2)",
+        "url": "https://d3fyi2ud8f6h0p.cloudfront.net/userfiles/documents/d/doc%20116-d-17-472-01-1-7-1.pdf"
+      }
+    ],
+    "appearance": {
+      "form": "puck",
+      "h_mm": 34.9,
+      "diameter_mm": 99.1,
+      "sources": [
+        {
+          "what": "Airmar H2183 datasheet (retailer copy)",
+          "url": "https://defender.ca/assets/pdf/airmar/h2183.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "raymarine_ev1",
+    "make": "Raymarine",
+    "model": "EV-1 sensor core",
+    "category": "Heading",
+    "kind": "compass",
+    "summary": "Evolution autopilot heading sensor and course computer on SeaTalkng (NMEA 2000 compatible with an adaptor cable).",
+    "native_n2k": false,
+    "via": "SeaTalkng, with a SeaTalkng-to-DeviceNet adaptor cable",
+    "manufacturer_code": 1851,
+    "len": 1,
+    "tx": [
+      {
+        "pgn": 127245,
+        "interval_ms": 40,
+        "note": "Listed by Raymarine. A 'virtual' rudder when there is no rudder reference. 40 ms is from one user's 2016 bus capture, not Raymarine."
+      },
+      {
+        "pgn": 127250,
+        "interval_ms": 100,
+        "note": "Listed by Raymarine. 100 ms from the same user capture. True or magnetic not documented; simulated as magnetic."
+      },
+      {
+        "pgn": 127251,
+        "interval_ms": 100,
+        "note": "Not in Raymarine's list; confirmed by Raymarine forum moderators. 100 ms from the user capture."
+      },
+      {
+        "pgn": 127257,
+        "interval_ms": 100,
+        "note": "Not in Raymarine's list; confirmed by moderators. 100 ms from the user capture."
+      },
+      {
+        "pgn": 59392
+      },
+      {
+        "pgn": 59904
+      },
+      {
+        "pgn": 60928
+      },
+      {
+        "pgn": 126208
+      },
+      {
+        "pgn": 126464
+      },
+      {
+        "pgn": 126996
+      }
+    ],
+    "rx": [
+      59904,
+      60928,
+      65240,
+      126208,
+      126464,
+      127245,
+      127250,
+      127258,
+      128259,
+      129026,
+      129029,
+      129283,
+      129284,
+      129285,
+      130306
+    ],
+    "notes": "Evolution autopilots use only EV-1 heading. With another heading source chosen, the EV-1 blends it with its own sensors and puts the result back on the bus (moderator). 30 mA.",
+    "gaps": [
+      "heading reference",
+      "transmit intervals from Raymarine",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "Raymarine EV-1 installation instructions (PGNs, LEN)",
+        "url": "https://docs.raymarine.com/87472/en-US/latest/87472%20(Rev%201)%20(en-US).pdf"
+      },
+      {
+        "what": "Raymarine forum: 127251 and 127257, user capture of rates (archived)",
+        "url": "http://web.archive.org/web/20201021184813/https://forum.raymarine.com/showthread.php?pid=1736"
+      },
+      {
+        "what": "Raymarine forum: attitude fields (archived)",
+        "url": "http://web.archive.org/web/20250211054312/https://forum.raymarine.com/printthread.php?tid=11353"
+      }
+    ],
+    "appearance": {
+      "form": "puck",
+      "h_mm": 35,
+      "diameter_mm": 140,
+      "sources": [
+        {
+          "what": "Raymarine Evolution installation 87180 rev 6 (retailer copy)",
+          "url": "https://cdn.watski.com/files/evolution-ev-1-and-acu-installation-en-11pvc.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "bg_precision9",
+    "make": "B&G",
+    "model": "Precision-9 compass",
+    "category": "Heading",
+    "kind": "compass",
+    "summary": "Nine-axis heading, rate of turn, attitude and heave sensor, native NMEA 2000. Navico's choice for autopilots.",
+    "native_n2k": true,
+    "manufacturer_code": 381,
+    "len": 1,
+    "tx": [
+      {
+        "pgn": 127250,
+        "interval_ms": 50,
+        "variant": "magnetic",
+        "note": "Magnetic heading at 20 Hz; 50 ms is our conversion."
+      },
+      {
+        "pgn": 127251,
+        "interval_ms": 50,
+        "note": "20 Hz."
+      },
+      {
+        "pgn": 127257,
+        "interval_ms": 100,
+        "note": "10 Hz."
+      },
+      {
+        "pgn": 127252,
+        "interval_ms": 100,
+        "note": "10 Hz."
+      }
+    ],
+    "settings": [
+      {
+        "name": "Auto calibration mode",
+        "default": "Auto",
+        "effect": "Auto, Locked, On or Off."
+      },
+      {
+        "name": "Heading offset",
+        "default": null,
+        "effect": "Corrects lubber line misalignment."
+      },
+      {
+        "name": "Pitch and roll offsets",
+        "default": null,
+        "effect": "Zeroed at the dock."
+      }
+    ],
+    "notes": "Heading ±2° after calibration, repeatability ±1°. Network management PGNs are not listed by Navico but are required by NMEA 2000.",
+    "gaps": [
+      "received PGN list",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "Navico installation guide 988-10984-004",
+        "url": "https://cdn.prod.website-files.com/5e7c93102a73aa16a17624a9/666abf9e8c0c4b793857a6c1_PRECISION-9_IG_EN_988-10984-004_w.pdf"
+      },
+      {
+        "what": "Earlier revision 988-10984-002 (retailer copy)",
+        "url": "https://media1.svb-media.de/media/snr/518377/pdf/manual_2022-01-03_10-40-49_ddbc0ca326a9e51d55cc61e00f9d999f.pdf"
+      }
+    ],
+    "appearance": {
+      "form": "puck",
+      "w_mm": 119,
+      "h_mm": 36,
+      "d_mm": 119,
+      "notes": "Width and depth 119 mm; not stated as a diameter",
+      "sources": [
+        {
+          "what": "Precision-9 installation guide 988-10984-001 (retailer copy)",
+          "url": "https://defender.com/assets/pdf/bandg/261066.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "bg_h5000_cpu",
+    "make": "B&G",
+    "model": "H5000 CPU",
+    "category": "Processor",
+    "kind": "processor",
+    "summary": "Instrument processor (Hydra, Hercules or Performance software): calibration, true wind, damping and source selection for the H5000 system. The autopilot computer is a separate unit.",
+    "native_n2k": true,
+    "manufacturer_code": 381,
+    "len": 1,
+    "tx": [],
+    "settings": [
+      {
+        "name": "Damping per function",
+        "default": null,
+        "effect": "0 to 9 s per data type. B&G says the update rate is fixed for all functions."
+      },
+      {
+        "name": "Source selection",
+        "default": "Auto",
+        "effect": "Auto or a preferred network source per data type."
+      },
+      {
+        "name": "Software level",
+        "default": null,
+        "effect": "Hydra, Hercules or Performance."
+      }
+    ],
+    "notes": "B&G publishes no PGN list, so this device sends only network management here. canboat describes proprietary PGN 130824 'B&G key-value data' as sent by B&G sailing processors; that this CPU sends it is not confirmed.",
+    "gaps": [
+      "PGNs sent and received",
+      "update rate",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "B&G H5000 installation manual 988-10635-002 (retailer copy)",
+        "url": "https://defender.com/assets/pdf/b-g/h5000_im_en_988-10635_002.pdf"
+      },
+      {
+        "what": "B&G H5000 operation manual (damping, fixed update rate, sources)",
+        "url": "https://productimageserver.com/literature/ownersManual/84018OM.pdf"
+      }
+    ],
+    "appearance": {
+      "form": "box",
+      "w_mm": 211,
+      "h_mm": 196,
+      "d_mm": 65.5,
+      "notes": "Black",
+      "sources": [
+        {
+          "what": "H5000 installation manual 988-10635-002 (retailer copy)",
+          "url": "https://defender.com/assets/pdf/b-g/h5000_im_en_988-10635_002.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "bg_h5000_pilot_computer",
+    "make": "B&G",
+    "model": "H5000 Pilot Computer",
+    "category": "Autopilot",
+    "kind": "processor",
+    "summary": "The H5000 autopilot computer, separate from the CPU.",
+    "native_n2k": true,
+    "manufacturer_code": 381,
+    "len": 1,
+    "tx": [],
+    "notes": "No PGN list is published.",
+    "gaps": [
+      "PGNs sent and received",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "B&G H5000 installation manual 988-10635-002 (retailer copy)",
+        "url": "https://defender.com/assets/pdf/b-g/h5000_im_en_988-10635_002.pdf"
+      }
+    ],
+    "appearance": {
+      "form": "box",
+      "w_mm": 211,
+      "h_mm": 196,
+      "d_mm": 65.5,
+      "notes": "Black; same case as the CPU",
+      "sources": [
+        {
+          "what": "H5000 installation manual 988-10635-002 (retailer copy)",
+          "url": "https://defender.com/assets/pdf/b-g/h5000_im_en_988-10635_002.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "bg_h5000_graphic",
+    "make": "B&G",
+    "model": "H5000 Graphic Display",
+    "category": "Display",
+    "kind": "display",
+    "summary": "H5000 system display, network powered.",
+    "native_n2k": true,
+    "manufacturer_code": 381,
+    "len": 4,
+    "tx": [],
+    "notes": "1.9 W typical. No PGN list is published.",
+    "gaps": [
+      "PGNs sent and received",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "B&G H5000 installation manual 988-10635-002 (retailer copy)",
+        "url": "https://defender.com/assets/pdf/b-g/h5000_im_en_988-10635_002.pdf"
+      },
+      {
+        "what": "H5000 operation manual 988-10630-003 (retailer copy)",
+        "url": "https://defender.ca/assets/pdf/b-g/h5000_om_en_988-10630-003_w.pdf"
+      }
+    ],
+    "appearance": {
+      "form": "display",
+      "w_mm": 178,
+      "h_mm": 114,
+      "d_mm": 42,
+      "screen_in": 5,
+      "orientation": "landscape",
+      "controls": "5 keys in a column right of the screen: Page, Up, Enter, Down, Menu",
+      "notes": "Depth computed from the drawing (32 plus 10 mm)",
+      "sources": [
+        {
+          "what": "H5000 installation manual 988-10635-002 (retailer copy)",
+          "url": "https://defender.com/assets/pdf/b-g/h5000_im_en_988-10635_002.pdf"
+        },
+        {
+          "what": "H5000 operation manual (retailer copy)",
+          "url": "https://defender.ca/assets/pdf/b-g/h5000_om_en_988-10630-003_w.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "bg_h5000_pilot_controller",
+    "make": "B&G",
+    "model": "H5000 Pilot Controller",
+    "category": "Display",
+    "kind": "display",
+    "summary": "H5000 autopilot control head.",
+    "native_n2k": true,
+    "manufacturer_code": 381,
+    "len": 3,
+    "tx": [],
+    "notes": "1.2 W typical. No PGN list is published.",
+    "gaps": [
+      "PGNs sent and received",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "B&G H5000 installation manual 988-10635-002 (retailer copy)",
+        "url": "https://defender.com/assets/pdf/b-g/h5000_im_en_988-10635_002.pdf"
+      }
+    ],
+    "appearance": {
+      "form": "display",
+      "w_mm": 70,
+      "h_mm": 114,
+      "d_mm": 41,
+      "screen_in": 2,
+      "orientation": "portrait",
+      "controls": "8 keys below the screen",
+      "notes": "Key position read from the drawing; the text says 8 keys",
+      "sources": [
+        {
+          "what": "H5000 installation manual 988-10635-002 (retailer copy)",
+          "url": "https://defender.com/assets/pdf/b-g/h5000_im_en_988-10635_002.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "bg_triton2",
+    "make": "B&G",
+    "model": "Triton2 display",
+    "category": "Display",
+    "kind": "display",
+    "summary": "Sailing instrument display. Receives a wide range of data; sends magnetic variation.",
+    "native_n2k": true,
+    "manufacturer_code": 381,
+    "len": 3,
+    "tx": [
+      {
+        "pgn": 127258,
+        "note": "Variation can be automatic (from the network) or manual; interval not stated."
+      },
+      {
+        "pgn": 59904
+      },
+      {
+        "pgn": 60928
+      },
+      {
+        "pgn": 126208
+      },
+      {
+        "pgn": 126996
+      }
+    ],
+    "rx": [
+      59392,
+      59904,
+      60928,
+      126208,
+      126992,
+      126996,
+      127237,
+      127245,
+      127250,
+      127251,
+      127257,
+      127258,
+      127488,
+      127489,
+      127493,
+      127505,
+      127508,
+      128259,
+      128267,
+      128275,
+      129025,
+      129026,
+      129029,
+      129033,
+      129038,
+      129039,
+      129040,
+      129041,
+      129283,
+      129284,
+      129539,
+      129540,
+      129794,
+      129801,
+      129802,
+      129808,
+      129809,
+      129810,
+      130074,
+      130306,
+      130310,
+      130311,
+      130312,
+      130313,
+      130314,
+      130576,
+      130577
+    ],
+    "settings": [
+      {
+        "name": "Magnetic variation",
+        "default": null,
+        "effect": "Auto or manual."
+      },
+      {
+        "name": "Sources",
+        "default": null,
+        "effect": "Auto or manual source selection."
+      },
+      {
+        "name": "Damping",
+        "default": null,
+        "effect": "Shared across a damping group."
+      }
+    ],
+    "notes": "126464 and 126993 are not in B&G's list.",
+    "gaps": [
+      "transmit interval of 127258",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "Triton2 operator manual 988-11214-001 (dealer copy)",
+        "url": "https://busse-yachtshop.de/pdf/bg-Triton2-operator-manual.pdf"
+      }
+    ],
+    "appearance": {
+      "form": "display",
+      "w_mm": 118,
+      "h_mm": 115,
+      "d_mm": 36.5,
+      "screen_in": 4.1,
+      "orientation": "square",
+      "controls": "5 keys below the screen: Pages, Up, Enter, Down, Menu",
+      "sources": [
+        {
+          "what": "Triton2 installation guide 988-11229-001 (retailer copy)",
+          "url": "https://media1.svb-media.de/media/snr/506959/pdf/drawing_2017-01-26_16-21-29_a5b337b5ed48695722d34672c8bdaecf.pdf"
+        },
+        {
+          "what": "Triton2 operator manual (retailer copy)",
+          "url": "https://busse-yachtshop.de/pdf/bg-Triton2-operator-manual.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "bg_nemesis",
+    "make": "B&G",
+    "model": "Nemesis 9 / 12",
+    "category": "Display",
+    "kind": "display",
+    "summary": "Race display for sailing boats, on NMEA 2000 and Ethernet.",
+    "native_n2k": true,
+    "manufacturer_code": 381,
+    "len": 1,
+    "tx": [],
+    "notes": "LEN from a press article, not B&G. 13 W (9-inch) or 19 W (12-inch) maximum.",
+    "gaps": [
+      "PGNs sent and received",
+      "LEN from B&G",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "Boatnews article (secondary)",
+        "url": "https://www.boatnews.com/story/34957/b-amp-amp-g-nemesis-nmea-2000-competition-displays-for-sailing-boats"
+      }
+    ],
+    "appearance": {
+      "form": "display",
+      "w_mm": 238.8,
+      "h_mm": 148.5,
+      "d_mm": 69.1,
+      "screen_in": 9,
+      "orientation": "landscape",
+      "controls": "touch screen, no keys",
+      "notes": "Nemesis 9; the 12 is 309.5 by 208.4 mm",
+      "sources": [
+        {
+          "what": "Nemesis installation guide 988-12790-001 (retailer copy)",
+          "url": "https://productimageserver.com/literature/installations/87037IN.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "navico_rf25n",
+    "make": "Navico",
+    "model": "RF25N rudder feedback",
+    "category": "Rudder",
+    "kind": "rudder",
+    "summary": "Rudder angle sensor, native NMEA 2000, sold under the Simrad, B&G and Lowrance brands.",
+    "native_n2k": true,
+    "len": 1,
+    "tx": [
+      {
+        "pgn": 127245,
+        "note": "Rate not stated."
+      }
+    ],
+    "notes": "Retailer data only: Navico's pages and manual could not be opened. ±120° range, ±0.5° accuracy, 40 mA. Reports only; in the simulator it does not drive the rudder.",
+    "gaps": [
+      "manufacturer documentation",
+      "which manufacturer code it claims",
+      "transmit interval",
+      "received PGNs",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "Harbour Chandler spec (127245, 1 LEN; secondary)",
+        "url": "https://harbourchandler.ca/navico-rf25n-rudder-reference-sensor-with-micro-c-connector"
+      },
+      {
+        "what": "The GPS Store (range, accuracy; secondary)",
+        "url": "https://thegpsstore.com/Brands/Simrad-Marine-Electronics/Simrad-RF25N-Rudder-Reference"
+      }
+    ],
+    "appearance": {
+      "form": "arm",
+      "h_mm": 65,
+      "diameter_mm": 99,
+      "arm_mm": 177,
+      "notes": "99 mm base, 65 mm high, 177 mm from base edge to lever tip",
+      "sources": [
+        {
+          "what": "RF25N instructions 988-10277-001 (retailer copy)",
+          "url": "http://webserver.flak.no/vbilder/1073306_ror.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "maretron_dcm100",
+    "make": "Maretron",
+    "model": "DCM100 DC monitor",
+    "category": "Power",
+    "kind": "battery",
+    "summary": "Battery and DC monitor with a shunt or Hall-effect sensor, native NMEA 2000.",
+    "native_n2k": true,
+    "manufacturer_code": 137,
+    "len": 1,
+    "tx": [
+      {
+        "pgn": 127506,
+        "interval_ms": 1500,
+        "note": "0.67 per second (our conversion to ms)."
+      },
+      {
+        "pgn": 127508,
+        "interval_ms": 1500,
+        "note": "0.67 per second (our conversion). Current positive is charging."
+      },
+      {
+        "pgn": 127751,
+        "interval_ms": 15000
+      },
+      {
+        "pgn": 127513
+      },
+      {
+        "pgn": 126720
+      },
+      {
+        "pgn": 130818
+      },
+      {
+        "pgn": 126993,
+        "interval_ms": 60000
+      },
+      {
+        "pgn": 59392
+      },
+      {
+        "pgn": 60928
+      },
+      {
+        "pgn": 126208
+      },
+      {
+        "pgn": 126464
+      },
+      {
+        "pgn": 126996
+      },
+      {
+        "pgn": 126998
+      }
+    ],
+    "rx": [
+      59904,
+      59392,
+      60928,
+      65240,
+      126208,
+      126720
+    ],
+    "settings": [
+      {
+        "name": "Current sensor type",
+        "default": "200 A Hall effect",
+        "effect": "200, 400 or 600 A."
+      },
+      {
+        "name": "Time remaining floor",
+        "default": "50%",
+        "effect": "State of charge treated as empty."
+      },
+      {
+        "name": "PGN enable",
+        "default": null,
+        "effect": "The two DC and battery PGNs can be turned off individually."
+      }
+    ],
+    "notes": "Manual rev 1.6, firmware 1.1.1.3. The receive list is our inference from the protocol PGNs. The simulator's battery current is positive for discharge, the opposite of Maretron's convention.",
+    "gaps": [
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "DCM100 user's manual rev 1.6",
+        "url": "https://www.maretron.com/wp-content/uploads/2026/06/DCM100UM_1.6.pdf"
+      }
+    ],
+    "appearance": {
+      "form": "box",
+      "w_mm": 106.7,
+      "h_mm": 88.9,
+      "d_mm": 51.6,
+      "sources": [
+        {
+          "what": "DCM100 user's manual rev 1.6",
+          "url": "https://www.maretron.com/wp-content/uploads/2026/06/DCM100UM_1.6.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "victron_lynx_shunt_vecan",
+    "make": "Victron Energy",
+    "model": "Lynx Shunt VE.Can",
+    "category": "Power",
+    "kind": "battery",
+    "summary": "Battery monitor shunt with a VE.Can port, connected to NMEA 2000 with Victron's adaptor cable.",
+    "native_n2k": true,
+    "via": "VE.Can to NMEA 2000 micro-C cable",
+    "manufacturer_code": 358,
+    "device_class": 35,
+    "device_function": 170,
+    "tx": [
+      {
+        "pgn": 127506
+      },
+      {
+        "pgn": 127508
+      },
+      {
+        "pgn": 127501,
+        "note": "Contactor and alarm states; the mapping to this PGN is our reading of Victron's page."
+      },
+      {
+        "pgn": 126996
+      }
+    ],
+    "notes": "Victron lists these as supported without saying sent or received. Class and function are given as names (Electrical generation, Battery); 35 and 170 are canboat's numbers for them.",
+    "gaps": [
+      "LEN",
+      "transmit intervals",
+      "received PGNs",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "Victron Lynx Shunt VE.Can manual: communication",
+        "url": "https://www.victronenergy.com/media/pg/Lynx_Shunt_VE.Can_-_M10/en/communication-and-interfacing.html"
+      },
+      {
+        "what": "Victron marine integration guide",
+        "url": "https://www.victronenergy.com/live/ve.can:nmea-2000:start"
+      }
+    ],
+    "appearance": {
+      "form": "shunt",
+      "w_mm": 180,
+      "h_mm": 190,
+      "d_mm": 80,
+      "sources": [
+        {
+          "what": "Victron Lynx Shunt VE.Can datasheet",
+          "url": "https://www.victronenergy.com/upload/documents/Datasheet-Lynx-Shunt-VE.Can-EN.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "yd_ydwg02",
+    "make": "Yacht Devices",
+    "model": "YDWG-02 Wi-Fi gateway",
+    "category": "Gateway",
+    "kind": "gateway",
+    "summary": "Wi-Fi gateway between NMEA 2000 and apps: NMEA 0183 or RAW frames over TCP or UDP.",
+    "native_n2k": true,
+    "manufacturer_code": 717,
+    "len": 1,
+    "tx": [
+      {
+        "pgn": 59392
+      },
+      {
+        "pgn": 60928
+      },
+      {
+        "pgn": 126464
+      },
+      {
+        "pgn": 126996
+      }
+    ],
+    "rx": [
+      59392,
+      60928,
+      59904,
+      129029,
+      129033,
+      126996,
+      126992
+    ],
+    "settings": [
+      {
+        "name": "Server 1",
+        "default": "TCP 1456, NMEA 0183",
+        "effect": "Up to 3 servers; RAW or NMEA 0183; TCP or UDP."
+      },
+      {
+        "name": "Server direction",
+        "default": "Transmit only",
+        "effect": "Must be bi-directional for apps to write to the bus."
+      },
+      {
+        "name": "Filters",
+        "default": "Empty (everything passes)",
+        "effect": "By NMEA 0183 sentence or NMEA 2000 PGN."
+      }
+    ],
+    "notes": "Does not send heartbeats or ISO requests. RAW mode: an app writes frames and accepted ones are echoed with T. The manual does not say whether the app's source address is kept. canboat's code (secondary) says the gateway substitutes its own address, which would stop simulated devices keeping their own addresses through it. In the simulator this device is the gateway its TCP clients use.",
+    "gaps": [
+      "source address handling in RAW mode (manufacturer)",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "YDWG-02 manual (PGNs, LEN, settings, RAW format)",
+        "url": "https://www.yachtd.com/downloads/ydwg02.pdf"
+      },
+      {
+        "what": "canboat Rust source: RAW source address rewrite (secondary)",
+        "url": "https://docs.rs/crate/canboat/latest/source/src/io/device/line_gateway.rs"
+      }
+    ],
+    "appearance": {
+      "form": "dongle",
+      "w_mm": 54,
+      "h_mm": 20,
+      "notes": "A 54 mm cylinder, 20 mm across",
+      "sources": [
+        {
+          "what": "YDWG-02 manual",
+          "url": "https://www.yachtd.com/downloads/ydwg02.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "yd_yden02",
+    "make": "Yacht Devices",
+    "model": "YDEN-02 Ethernet gateway",
+    "category": "Gateway",
+    "kind": "gateway",
+    "summary": "Ethernet version of the YDWG-02.",
+    "native_n2k": true,
+    "manufacturer_code": 717,
+    "len": 1,
+    "tx": [
+      {
+        "pgn": 59392
+      },
+      {
+        "pgn": 60928
+      },
+      {
+        "pgn": 126464
+      },
+      {
+        "pgn": 126996
+      }
+    ],
+    "rx": [
+      59392,
+      60928,
+      59904,
+      129029,
+      129033,
+      126996,
+      126992
+    ],
+    "settings": [
+      {
+        "name": "Server 1",
+        "default": "TCP 1456, NMEA 0183",
+        "effect": "As YDWG-02."
+      },
+      {
+        "name": "IP mode",
+        "default": "DHCP, falling back to its own DHCP server at 192.168.4.1",
+        "effect": "Network only."
+      }
+    ],
+    "notes": "48 mA. RAW mode: an app writes frames and accepted ones are echoed with T. The manual does not say whether the app's source address is kept. canboat's code (secondary) says the gateway substitutes its own address, which would stop simulated devices keeping their own addresses through it.",
+    "gaps": [
+      "default server direction",
+      "source address handling in RAW mode (manufacturer)",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "YDEN-02 manual",
+        "url": "https://www.yachtd.com/downloads/yden02.pdf"
+      },
+      {
+        "what": "canboat Rust source: RAW source address rewrite (secondary)",
+        "url": "https://docs.rs/crate/canboat/latest/source/src/io/device/line_gateway.rs"
+      }
+    ],
+    "appearance": {
+      "form": "dongle",
+      "w_mm": 54,
+      "notes": "54 mm long; no diameter given",
+      "sources": [
+        {
+          "what": "YDEN-02 manual",
+          "url": "https://www.yachtd.com/downloads/yden02.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "actisense_ngx1",
+    "make": "Actisense",
+    "model": "NGX-1 gateway",
+    "category": "Gateway",
+    "kind": "gateway",
+    "summary": "USB or serial gateway between NMEA 2000 and a PC, and an NMEA 0183 converter.",
+    "native_n2k": true,
+    "manufacturer_code": 273,
+    "tx": [],
+    "settings": [
+      {
+        "name": "Operating mode",
+        "default": null,
+        "effect": "Transfer (PC interface) or Convert (0183 converter)."
+      },
+      {
+        "name": "Tx period per PGN",
+        "default": null,
+        "effect": "Set in Actisense Toolkit."
+      }
+    ],
+    "notes": "In Actisense's NGT protocol the gateway claims one address and the PC cannot choose the source. Its raw CAN modes carry a source byte, but Actisense does not say whether it is used; one untested third-party report says the NGX's raw mode stops claiming an address.",
+    "gaps": [
+      "LEN: the datasheet says 1 (2 for ISO-V2), the user manual 2",
+      "its own PGNs",
+      "whether it can send from host-chosen addresses",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "NGX-1 datasheet v2.0",
+        "url": "https://actisense.com/wp-content/uploads/2023/10/NGX-1-Dual-Datasheet-v2.0.pdf"
+      },
+      {
+        "what": "NGX-1 user manual 1.2",
+        "url": "https://actisense.com/wp-content/uploads/2023/10/NGX-1-ISO-USB-User-Manual-issue-1.2.pdf"
+      },
+      {
+        "what": "Actisense SDK manual 1.07 (address claiming)",
+        "url": "https://actisense.com/wp-content/uploads/2020/01/ActisenseComms-SDK-User-Manual-Issue-1.07-1.pdf"
+      },
+      {
+        "what": "BST-95 raw frame format",
+        "url": "https://github.com/Actisense/SDK/blob/main/docs/DataFormats/Binary/bst-detail/BST-95-can-frame.md"
+      },
+      {
+        "what": "canboatjs issue 514 (secondary, untested)",
+        "url": "https://github.com/canboat/canboatjs/issues/514"
+      }
+    ],
+    "appearance": {
+      "form": "box",
+      "w_mm": 91,
+      "h_mm": 69,
+      "d_mm": 24,
+      "sources": [
+        {
+          "what": "NGX-1 datasheet v2.0",
+          "url": "https://actisense.com/wp-content/uploads/2023/10/NGX-1-Dual-Datasheet-v2.0.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "garmin_gnx20",
+    "make": "Garmin",
+    "model": "GNX 20 display",
+    "category": "Display",
+    "kind": "display",
+    "summary": "Instrument display; sends only network management.",
+    "native_n2k": true,
+    "manufacturer_code": 229,
+    "len": 3,
+    "tx": [
+      {
+        "pgn": 61184,
+        "note": "Garmin labels it product information; it is the proprietary single-frame PGN."
+      },
+      {
+        "pgn": 59392
+      },
+      {
+        "pgn": 59904
+      },
+      {
+        "pgn": 60928
+      },
+      {
+        "pgn": 126208
+      },
+      {
+        "pgn": 126464
+      },
+      {
+        "pgn": 126996
+      }
+    ],
+    "rx": [
+      59392,
+      59904,
+      60928,
+      61184,
+      126208,
+      126996,
+      126992,
+      127245,
+      127250,
+      127488,
+      127489,
+      127508,
+      128259,
+      128267,
+      129025,
+      129026,
+      129029,
+      129283,
+      129284,
+      129285,
+      129539,
+      130306,
+      130310,
+      130311,
+      130312,
+      130313,
+      130314
+    ],
+    "notes": "Also reads NMEA 0183.",
+    "gaps": [
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "GNX 20/21 installation instructions (retailer copy)",
+        "url": "https://defender.com/assets/pdf/garmin/gnx_20_21_install_instructions_en.pdf"
+      }
+    ],
+    "appearance": {
+      "form": "display",
+      "w_mm": 115,
+      "h_mm": 110,
+      "d_mm": 30,
+      "screen_in": 4.0,
+      "orientation": "landscape",
+      "controls": "5 keys below the screen",
+      "notes": "Key position from the manual's illustration",
+      "sources": [
+        {
+          "what": "GNX 20/21 installation instructions",
+          "url": "https://static.garmin.com/pumac/GNX_20_21_Install_Instructions_EN.pdf"
+        },
+        {
+          "what": "GNX 20/21 owner's manual",
+          "url": "https://static.garmin.com/pumac/GNX_20_21_OM_EN.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "nke_box_n2k",
+    "make": "NKE",
+    "model": "Box N2K gateway",
+    "category": "Gateway",
+    "kind": "processor",
+    "summary": "NKE's gateway between its Topline bus, NMEA 0183 and NMEA 2000. NKE sensors, processors and pilots are not NMEA 2000 devices; their data reaches the bus through this box.",
+    "native_n2k": true,
+    "manufacturer_code": 1233,
+    "len": 1,
+    "tx": [
+      {
+        "pgn": 126992
+      },
+      {
+        "pgn": 127245,
+        "note": "Topline rudder angle."
+      },
+      {
+        "pgn": 127250,
+        "variant": "magnetic",
+        "note": "Topline compass; true heading (CAP_VRAI) also maps to 127250. Firmware 1.1 'HDG auto repeat 1.5 s' does not say which output."
+      },
+      {
+        "pgn": 127251
+      },
+      {
+        "pgn": 127257,
+        "note": "Heel, pitch and trim."
+      },
+      {
+        "pgn": 127258
+      },
+      {
+        "pgn": 127508
+      },
+      {
+        "pgn": 128259
+      },
+      {
+        "pgn": 128267
+      },
+      {
+        "pgn": 128275
+      },
+      {
+        "pgn": 129025
+      },
+      {
+        "pgn": 129026
+      },
+      {
+        "pgn": 129029
+      },
+      {
+        "pgn": 130306,
+        "variant": "apparent"
+      },
+      {
+        "pgn": 130306,
+        "variant": "true_boat",
+        "inferred": true,
+        "note": "NKE sends true wind speed and angle; the reference it uses is not stated."
+      },
+      {
+        "pgn": 130310,
+        "note": "Marked obsolete by NKE."
+      },
+      {
+        "pgn": 130311,
+        "note": "Marked obsolete."
+      },
+      {
+        "pgn": 130312,
+        "note": "Marked obsolete."
+      },
+      {
+        "pgn": 130314
+      },
+      {
+        "pgn": 130316,
+        "variant": "air"
+      },
+      {
+        "pgn": 130316,
+        "variant": "sea"
+      },
+      {
+        "pgn": 130577
+      },
+      {
+        "pgn": 127233,
+        "note": "Man overboard (firmware 1.1)."
+      },
+      {
+        "pgn": 127505
+      },
+      {
+        "pgn": 127506
+      },
+      {
+        "pgn": 128000,
+        "note": "Leeway."
+      },
+      {
+        "pgn": 129283
+      },
+      {
+        "pgn": 129284
+      },
+      {
+        "pgn": 129291,
+        "note": "Current set and drift."
+      },
+      {
+        "pgn": 129038
+      },
+      {
+        "pgn": 129039
+      },
+      {
+        "pgn": 129040
+      },
+      {
+        "pgn": 129041
+      },
+      {
+        "pgn": 129793
+      },
+      {
+        "pgn": 129794
+      },
+      {
+        "pgn": 129802
+      },
+      {
+        "pgn": 129809
+      },
+      {
+        "pgn": 129810
+      },
+      {
+        "pgn": 130824,
+        "note": "NKE labels it mast angle; proprietary range, framing not given."
+      },
+      {
+        "pgn": 60160
+      },
+      {
+        "pgn": 60416
+      },
+      {
+        "pgn": 59392
+      },
+      {
+        "pgn": 59904
+      },
+      {
+        "pgn": 60928
+      },
+      {
+        "pgn": 126464
+      },
+      {
+        "pgn": 126993
+      },
+      {
+        "pgn": 126996
+      },
+      {
+        "pgn": 126998
+      }
+    ],
+    "rx": [
+      59392,
+      59904,
+      60160,
+      60416,
+      60928,
+      65240,
+      65293,
+      126208,
+      126464,
+      126992,
+      126993,
+      126996,
+      126998,
+      127245,
+      127250,
+      127251,
+      127257,
+      127258,
+      127505,
+      127506,
+      127508,
+      128259,
+      128267,
+      128275,
+      129025,
+      129026,
+      129029,
+      129033,
+      129038,
+      129039,
+      129040,
+      129041,
+      129283,
+      129284,
+      129291,
+      129793,
+      129794,
+      129802,
+      129809,
+      129810,
+      130306,
+      130310,
+      130311,
+      130312,
+      130314,
+      130316,
+      130322,
+      130323,
+      130324,
+      130577,
+      130824
+    ],
+    "settings": [
+      {
+        "name": "NMEA output per Topline channel",
+        "default": null,
+        "effect": "Turns each channel on or off on NMEA 2000 (TopSailor)."
+      },
+      {
+        "name": "Init",
+        "default": null,
+        "effect": "Learns NMEA 2000 sources and decides which PGNs Topline data can feed."
+      }
+    ],
+    "notes": "Sends what the Topline system has: in the simulator all of it is on. After init it asks other devices for their PGN lists. No autopilot command or status PGNs are listed; pilot control is through NKE's app. 50 mA.",
+    "gaps": [
+      "transmit intervals",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "Box N2K user manual (PGN table, channel map, LEN)",
+        "url": "https://nke-marine-electronics.fr/wp-content/uploads/user_manuals/EN/71_Box_N2K_um_EN.pdf"
+      },
+      {
+        "what": "Box N2K product page",
+        "url": "https://nke-marine-electronics.com/project/box-n2k/"
+      },
+      {
+        "what": "Processor HR manual (no NMEA 2000 port)",
+        "url": "https://nke-marine-electronics.fr/wp-content/uploads/user_manuals/EN/43_HR_Processor_um_EN.pdf"
+      }
+    ],
+    "appearance": {
+      "form": "box",
+      "w_mm": 110,
+      "h_mm": 56.4,
+      "d_mm": 26,
+      "sources": [
+        {
+          "what": "Box N2K user guide V1.1",
+          "url": "https://nke-marine-electronics.fr/wp-content/uploads/user_manuals/EN/71_Box_N2K_um_EN.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "raymarine_itc5",
+    "make": "Raymarine",
+    "model": "iTC-5 transducer converter",
+    "category": "Processor",
+    "kind": "processor",
+    "summary": "Puts analogue wind, speed, depth, rudder and fluxgate compass transducers on SeaTalkng.",
+    "native_n2k": true,
+    "via": "SeaTalkng",
+    "manufacturer_code": 1851,
+    "len": 3,
+    "tx": [
+      {
+        "pgn": 127245,
+        "note": "Only with a rudder reference fitted."
+      },
+      {
+        "pgn": 127250,
+        "variant": "magnetic",
+        "note": "Only with a fluxgate compass fitted; magnetic inferred from the fluxgate."
+      },
+      {
+        "pgn": 128259
+      },
+      {
+        "pgn": 128267
+      },
+      {
+        "pgn": 128275
+      },
+      {
+        "pgn": 130306,
+        "variant": "apparent"
+      },
+      {
+        "pgn": 130310,
+        "variant": "sea"
+      },
+      {
+        "pgn": 130312,
+        "variant": "sea"
+      },
+      {
+        "pgn": 59392
+      },
+      {
+        "pgn": 60928
+      },
+      {
+        "pgn": 126464
+      },
+      {
+        "pgn": 126996
+      },
+      {
+        "pgn": 126208
+      }
+    ],
+    "rx": [
+      59904,
+      60928,
+      65240,
+      126208
+    ],
+    "settings": [
+      {
+        "name": "Transducer calibration",
+        "default": null,
+        "effect": "From an i70 or i70s, ST70, or a LightHouse MFD."
+      }
+    ],
+    "notes": "Software 1.12. Five transducer inputs. Under 150 mA.",
+    "gaps": [
+      "transmit intervals",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "iTC-5 PGN table",
+        "url": "https://docs.raymarine.com/87138/en-US/latest/N2KSentences-031F648C.html"
+      },
+      {
+        "what": "iTC-5 power and LEN",
+        "url": "https://docs.raymarine.com/87138/en-US/latest/PowerSpecification-8B46A6F5.html"
+      },
+      {
+        "what": "iTC-5 data types",
+        "url": "https://docs.raymarine.com/87138/en-US/latest/SupportedDataTypes-02E2FF9B.html"
+      }
+    ],
+    "appearance": {
+      "form": "box",
+      "w_mm": 163.5,
+      "h_mm": 93.1,
+      "d_mm": 44.3,
+      "sources": [
+        {
+          "what": "iTC-5 installation 87138 rev 4 (retailer copy)",
+          "url": "https://marinesupplies.fr/wp-content/uploads/2024/11/iTC-5-Installation-instructions-87138-Rev-4-EN.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "raymarine_i70s",
+    "make": "Raymarine",
+    "model": "i70s display",
+    "category": "Display",
+    "kind": "display",
+    "summary": "Instrument display on SeaTalkng.",
+    "native_n2k": true,
+    "via": "SeaTalkng; adaptor cable to a DeviceNet backbone",
+    "manufacturer_code": 1851,
+    "len": 3,
+    "tx": [
+      {
+        "pgn": 127245,
+        "off": true,
+        "note": "Raymarine lists it as receive and transmit without saying when it sends; off by default."
+      },
+      {
+        "pgn": 127250,
+        "off": true,
+        "note": "Raymarine lists it as receive and transmit without saying when it sends; off by default."
+      },
+      {
+        "pgn": 127251,
+        "off": true,
+        "note": "Raymarine lists it as receive and transmit without saying when it sends; off by default."
+      },
+      {
+        "pgn": 127258,
+        "off": true,
+        "note": "Raymarine lists it as receive and transmit without saying when it sends; off by default."
+      },
+      {
+        "pgn": 128259,
+        "off": true,
+        "note": "Raymarine lists it as receive and transmit without saying when it sends; off by default."
+      },
+      {
+        "pgn": 128267,
+        "off": true,
+        "note": "Raymarine lists it as receive and transmit without saying when it sends; off by default."
+      },
+      {
+        "pgn": 128275,
+        "off": true,
+        "note": "Raymarine lists it as receive and transmit without saying when it sends; off by default."
+      },
+      {
+        "pgn": 129025,
+        "off": true,
+        "note": "Raymarine lists it as receive and transmit without saying when it sends; off by default."
+      },
+      {
+        "pgn": 129026,
+        "off": true,
+        "note": "Raymarine lists it as receive and transmit without saying when it sends; off by default."
+      },
+      {
+        "pgn": 129029,
+        "off": true,
+        "note": "Raymarine lists it as receive and transmit without saying when it sends; off by default."
+      },
+      {
+        "pgn": 129033,
+        "off": true,
+        "note": "Raymarine lists it as receive and transmit without saying when it sends; off by default."
+      },
+      {
+        "pgn": 129044,
+        "off": true,
+        "note": "Raymarine lists it as receive and transmit without saying when it sends; off by default."
+      },
+      {
+        "pgn": 129283,
+        "off": true,
+        "note": "Raymarine lists it as receive and transmit without saying when it sends; off by default."
+      },
+      {
+        "pgn": 129284,
+        "off": true,
+        "note": "Raymarine lists it as receive and transmit without saying when it sends; off by default."
+      },
+      {
+        "pgn": 130306,
+        "off": true,
+        "note": "Raymarine lists it as receive and transmit without saying when it sends; off by default."
+      },
+      {
+        "pgn": 130310,
+        "off": true,
+        "note": "Raymarine lists it as receive and transmit without saying when it sends; off by default."
+      },
+      {
+        "pgn": 130311,
+        "off": true,
+        "note": "Raymarine lists it as receive and transmit without saying when it sends; off by default."
+      },
+      {
+        "pgn": 59392
+      },
+      {
+        "pgn": 59904
+      },
+      {
+        "pgn": 60928
+      },
+      {
+        "pgn": 126208
+      },
+      {
+        "pgn": 126464
+      },
+      {
+        "pgn": 126996
+      }
+    ],
+    "rx": [
+      59392,
+      59904,
+      60928,
+      126208,
+      126464,
+      126996,
+      127237,
+      127245,
+      127250,
+      127251,
+      127257,
+      127258,
+      127488,
+      127489,
+      127493,
+      127496,
+      127497,
+      127498,
+      127505,
+      127506,
+      127508,
+      128259,
+      128267,
+      128275,
+      129025,
+      129026,
+      129029,
+      129033,
+      129038,
+      129039,
+      129040,
+      129041,
+      129044,
+      129283,
+      129284,
+      129291,
+      129801,
+      129802,
+      129809,
+      129810,
+      130306,
+      130310,
+      130311,
+      130312,
+      130316,
+      130576,
+      130577
+    ],
+    "notes": "143 mA. Turning its PGNs on shows what duplicate sources look like when a display repeats data.",
+    "gaps": [
+      "when it actually transmits",
+      "transmit intervals",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "i70s PGN list",
+        "url": "https://docs.raymarine.com/87420/en-US/latest/SupportedNMEA2000PGNlist-AA8295AC.html"
+      },
+      {
+        "what": "i70s power and LEN",
+        "url": "https://docs.raymarine.com/87420/en-US/latest/PowerSpecification-E3E98FEE.html"
+      }
+    ],
+    "appearance": {
+      "form": "display",
+      "w_mm": 110,
+      "h_mm": 115,
+      "d_mm": 43.85,
+      "screen_in": 4.1,
+      "orientation": "square",
+      "controls": "4 buttons below the screen: Power, Up, Down, Menu",
+      "sources": [
+        {
+          "what": "i70s installation and operation 81364-1 (retailer copy)",
+          "url": "https://productimageserver.com/literature/ownersManual/61763OM.pdf"
+        }
+      ]
+    }
+  },
+  {
+    "key": "raymarine_acu200",
+    "make": "Raymarine",
+    "model": "Evolution ACU-200",
+    "category": "Autopilot",
+    "kind": "rudder",
+    "summary": "Evolution autopilot drive unit. Its only data PGN is rudder angle.",
+    "native_n2k": true,
+    "via": "SeaTalkng",
+    "manufacturer_code": 1851,
+    "len": 1,
+    "tx": [
+      {
+        "pgn": 127245,
+        "note": "Sent and received. Rate not stated."
+      },
+      {
+        "pgn": 59392
+      },
+      {
+        "pgn": 59904
+      },
+      {
+        "pgn": 60928
+      },
+      {
+        "pgn": 126208
+      },
+      {
+        "pgn": 126464
+      },
+      {
+        "pgn": 126996
+      }
+    ],
+    "rx": [
+      59904,
+      60928,
+      65240,
+      126208,
+      126464,
+      127245
+    ],
+    "settings": [
+      {
+        "name": "Rudder offset",
+        "default": null,
+        "effect": "Set from the control head."
+      },
+      {
+        "name": "Rudder damping",
+        "default": null,
+        "effect": "Levels 1 to 9 (deadband)."
+      }
+    ],
+    "notes": "Neither the ACU nor the EV-1 lists 127237. Evolution ignores rudder data from units not wired to an ACU. The ACU-200, 300 and 400 power the SeaTalkng bus at 3 A. In the simulator it reports rudder angle only; the simulator's own drive takes orders.",
+    "gaps": [
+      "transmit interval",
+      "device class and function",
+      "Model ID in 126996"
+    ],
+    "sources": [
+      {
+        "what": "Raymarine 87180 rev 6 (third-party copy)",
+        "url": "https://maritimo.at/media/49/27/a3/1705845540/70481_Installationsartikel.pdf"
+      },
+      {
+        "what": "EV-2 PGN list (Raymarine)",
+        "url": "https://docs.raymarine.com/87181/en-US/latest/NMEA2000sentencesPGNs-B151A59C.html"
+      }
+    ],
+    "appearance": {
+      "form": "box",
+      "w_mm": 285,
+      "h_mm": 211.5,
+      "d_mm": 64.5,
+      "sources": [
+        {
+          "what": "Raymarine Evolution installation 87180 rev 6 (retailer copy)",
+          "url": "https://cdn.watski.com/files/evolution-ev-1-and-acu-installation-en-11pvc.pdf"
+        }
+      ]
+    }
+  }
+]

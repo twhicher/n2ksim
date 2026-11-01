@@ -1,0 +1,1417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>n2ksim</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 fill=%22%23fff%22/%3E%3Cpath d=%22M1 7h14M4 7v6M8 7v6M12 7v6%22 stroke=%22%23000%22 stroke-width=%221.6%22/%3E%3C/svg%3E">
+<style>
+:root {
+  --paper: #ffffff;
+  --ink: #000000;
+  --rule: #dadada;
+  --ink2: #767676;
+  --wash: #f2f2f2;
+  --sans: "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  --din: "DIN Alternate", "DIN Condensed", "Avenir Next Condensed", "Arial Narrow", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--paper); color: var(--ink); font: 14px/1.45 var(--sans); }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.din { font-family: var(--din); font-variant-numeric: tabular-nums; }
+.mono { font-family: var(--mono); font-size: 12px; }
+.muted { color: var(--ink2); }
+a { color: var(--ink); }
+
+/* Title block */
+#app { display: grid; grid-template-rows: auto auto 1fr; grid-template-columns: minmax(0, 1fr); height: 100vh; }
+.tb { display: flex; min-width: 0; align-items: stretch; border-bottom: 2px solid var(--ink); overflow-x: auto; white-space: nowrap; scrollbar-width: thin; }
+.tb > * { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-right: 1px solid var(--ink); flex: none; }
+.tb .name { font-family: var(--din); font-size: 20px; letter-spacing: .02em; padding-right: 16px; }
+.tb .cell small { color: var(--ink2); font-size: 11px; display: block; line-height: 1.1; }
+.tb .cell b { font-family: var(--din); font-weight: normal; font-size: 16px; display: block; line-height: 1.2; }
+.tb .cell > div { display: flex; flex-direction: column; }
+.tb .grow { flex: 1; border-right: 0; padding: 0; }
+.tb .end { border-right: 0; border-left: 1px solid var(--ink); }
+.seg { display: inline-flex; border: 1px solid var(--ink); }
+.seg button { background: var(--paper); border: 0; padding: 3px 9px; cursor: pointer; font-family: var(--din); }
+.seg button + button { border-left: 1px solid var(--ink); }
+.seg button.on { background: var(--ink); color: var(--paper); }
+#meter { display: block; }
+#meter .needle { transition: transform .4s ease-out; transform-origin: 40px 38px; }
+.btn { background: var(--paper); border: 1px solid var(--ink); border-radius: 2px; padding: 4px 11px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { background: var(--ink); color: var(--paper); }
+.btn.solid { background: var(--ink); color: var(--paper); }
+.btn.solid:hover { background: var(--paper); color: var(--ink); }
+.btn.small { padding: 2px 8px; font-size: 13px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--ink); display: inline-block; flex: none; }
+.dot.on { background: var(--ink); }
+.dot.alarm { background: repeating-linear-gradient(45deg, var(--ink) 0 2px, var(--paper) 2px 4px); }
+
+nav.tabs { display: flex; gap: 0; padding: 0 16px; border-bottom: 1px solid var(--ink); }
+nav.tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 9px 14px 7px; cursor: pointer; color: var(--ink2); }
+nav.tabs button.on { color: var(--ink); border-bottom-color: var(--ink); }
+#offline { display: none; background: var(--ink); color: var(--paper); padding: 6px 16px; }
+main { overflow: auto; min-height: 0; }
+.view { display: none; padding: 16px 20px 40px; max-width: 1500px; }
+.view.on { display: block; }
+
+/* Sheets */
+.sheet { border: 1.5px solid var(--ink); margin-bottom: 18px; background: var(--paper); }
+.sheet > h2 { margin: 0; padding: 7px 12px; font-size: 15px; font-weight: 600; border-bottom: 1px solid var(--ink); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sheet > h2 .grow { flex: 1; }
+.sheet > .body { padding: 12px; }
+.paper { background-image: radial-gradient(var(--rule) 1px, transparent 1.2px); background-size: 19px 19px; background-position: 9px 9px; }
+.row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 18px; }
+label.f { display: inline-flex; flex-direction: column; gap: 2px; color: var(--ink2); font-size: 12px; }
+label.f input, label.f select, .field { border: 0; border-bottom: 1px solid var(--ink); background: transparent; padding: 3px 1px; width: 96px; font-family: var(--din); font-size: 15px; color: var(--ink); border-radius: 0; }
+label.f input[type=text] { width: 180px; font-family: var(--sans); font-size: 14px; }
+label.c { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+input[type=checkbox], input[type=range] { accent-color: var(--ink); }
+select.btn { padding: 3px 6px; }
+fieldset { border: 0; border-top: 1px solid var(--ink); margin: 14px 0 0; padding: 10px 0 0; }
+legend { padding: 0 6px 0 0; font-size: 13px; font-weight: 600; }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 600; font-size: 12px; border-bottom: 1px solid var(--ink); position: sticky; top: 0; background: var(--paper); white-space: nowrap; }
+td.n, th.n { text-align: right; font-family: var(--din); font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.click { cursor: pointer; } tr.click:hover td { background: var(--wash); }
+tr.sel td { background: var(--ink); color: var(--paper); }
+tr.sel td .muted { color: var(--rule); }
+.clip { max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scroll { overflow: auto; }
+
+/* Schematic */
+#sheet-svg { display: block; width: 100%; user-select: none; touch-action: none; }
+#sheet-svg text { font-family: var(--sans); fill: var(--ink); }
+#sheet-svg .din { font-family: var(--din); }
+#sheet-svg .dev { cursor: grab; }
+#sheet-svg .dev:active { cursor: grabbing; }
+#sheet-svg .term { cursor: pointer; }
+#sheet-svg .pulse { animation: flow var(--dur, 2s) linear infinite; }
+@keyframes flow { to { stroke-dashoffset: -28; } }
+@media (prefers-reduced-motion: reduce) { #sheet-svg .pulse { animation: none; } #meter .needle { transition: none; } }
+
+/* Test drawer */
+#testtab { position: fixed; right: 0; top: 46%; transform: translateY(-50%); writing-mode: vertical-rl; background: var(--ink); color: var(--paper); border: 0; padding: 14px 7px; cursor: pointer; font-family: var(--din); font-size: 16px; letter-spacing: .04em; z-index: 6; display: flex; align-items: center; gap: 8px; }
+#testtab .count { writing-mode: horizontal-tb; background: var(--paper); color: var(--ink); min-width: 20px; padding: 1px 4px; text-align: center; font-size: 13px; }
+#testtab .count:empty { display: none; }
+#test { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 100vw); background: var(--paper); border-left: 2px solid var(--ink); transform: translateX(100%); transition: transform .22s ease-out; z-index: 7; display: grid; grid-template-rows: auto 1fr; box-shadow: -8px 0 0 rgba(0,0,0,.06); }
+#test.open { transform: none; }
+@media (prefers-reduced-motion: reduce) { #test { transition: none; } }
+#test header { display: flex; align-items: center; padding: 10px 14px; border-bottom: 2px solid var(--ink); gap: 10px; }
+#test header b { font-family: var(--din); font-weight: normal; font-size: 20px; flex: 1; }
+#test .inner { overflow: auto; padding: 4px 0 30px; }
+.find { border-bottom: 1px solid var(--rule); padding: 9px 14px; cursor: pointer; display: grid; grid-template-columns: 16px 1fr auto; gap: 8px; align-items: start; }
+.find .mark { width: 12px; height: 12px; border: 1.5px solid var(--ink); margin-top: 4px; }
+.find.error .mark { background: var(--ink); }
+.find.warn .mark { background: repeating-linear-gradient(45deg, var(--ink) 0 2px, var(--paper) 2px 4px); }
+.find.info .mark { border-radius: 50%; }
+.find .d { display: none; grid-column: 2 / 4; color: var(--ink2); font-size: 13px; }
+.find.open .d { display: block; }
+.find .ev { font-size: 11px; color: var(--ink2); border: 1px solid var(--rule); padding: 0 5px; white-space: nowrap; }
+.allgood { padding: 14px; }
+.subhead { padding: 18px 14px 6px; font-weight: 600; border-bottom: 1px solid var(--ink); }
+.drill { display: block; width: 100%; text-align: left; background: var(--paper); border: 0; border-bottom: 1px solid var(--rule); padding: 9px 14px; cursor: pointer; }
+.drill:hover { background: var(--ink); color: var(--paper); }
+.drill:hover span { color: var(--rule); }
+.drill span { display: block; color: var(--ink2); font-size: 13px; }
+
+/* Instruments */
+.faces { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.face { border: 1.5px solid var(--ink); padding: 10px 12px 9px; position: relative; min-height: 132px; display: flex; flex-direction: column; }
+.face .k { display: flex; justify-content: space-between; gap: 6px; align-items: baseline; font-weight: 600; font-size: 13px; }
+.face .k span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.face .k select { border: 0; background: transparent; font-size: 11px; color: var(--ink2); width: 62px; flex: none; text-align: right; }
+.face .v { font-family: var(--din); font-size: 34px; line-height: 1.1; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.face .v small { font-size: 15px; margin-left: 3px; color: var(--ink2); }
+.face .s { margin-top: auto; padding-top: 4px; font-size: 12px; color: var(--ink2); display: flex; justify-content: space-between; gap: 8px; }
+.face .s span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.face.big { grid-row: span 2; }
+.face.stale .v { text-decoration: line-through; color: var(--ink2); }
+.face.stale::after { content: "stale"; position: absolute; top: 8px; right: 10px; background: var(--ink); color: var(--paper); font-size: 11px; padding: 0 5px; }
+.face svg { display: block; margin: 6px auto 0; }
+.diff { font-weight: 700; text-decoration: underline; }
+
+/* Traffic */
+.log td { padding: 2px 6px; white-space: nowrap; border-bottom: 1px solid var(--wash); font-family: var(--mono); font-size: 12px; }
+.log td.txt { max-width: 0; overflow: hidden; text-overflow: ellipsis; width: 100%; font-family: var(--sans); font-size: 13px; }
+.log tr.err td { text-decoration: line-through; }
+.log tr .src-cli { border-left: 3px solid var(--ink); }
+.log tr .src-con { border-left: 3px double var(--ink); }
+.log tr .src-rep { border-left: 3px dotted var(--ink); }
+.detail { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; border: 1px solid var(--ink); padding: 8px; min-height: 56px; background: var(--wash); }
+canvas.chart { width: 100%; height: 110px; display: block; }
+pre.help { font-family: var(--mono); font-size: 12px; border: 1px solid var(--ink); padding: 8px 10px; overflow: auto; margin: 6px 0; background: var(--wash); }
+code { font-family: var(--mono); font-size: 12px; background: var(--wash); padding: 0 3px; }
+
+#toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 8px 14px; display: none; z-index: 10; max-width: 90vw; }
+#toast.err { background: var(--paper); color: var(--ink); border: 2px solid var(--ink); }
+
+@media (max-width: 760px) {
+  .view { padding: 12px; }
+  .cols { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div>
+    <div id="offline">Lost connection to the simulator. Retrying.</div>
+    <header class="tb" id="tb">
+      <div class="name">n2ksim</div>
+      <div class="cell"><div><small>Network</small><b id="netname">…</b></div></div>
+      <div class="cell"><div><small>UTC</small><b id="clock">--:--:--</b></div></div>
+      <div><span class="seg" id="speed"></span></div>
+      <div class="cell" title="Share of the last second the bus was busy">
+        <svg id="meter" width="80" height="44" viewBox="0 0 80 44" aria-hidden="true"></svg>
+        <div><small>Bus load</small><b id="loadtxt">0%</b></div>
+      </div>
+      <div class="cell"><div><small>Frames per second</small><b id="fps">0</b></div></div>
+      <div class="cell"><div><small>Error frames per second</small><b id="eps">0</b></div></div>
+      <div class="cell" id="gw"></div>
+      <div class="cell" id="replaycell" style="display:none"><div><small>Replay</small><b id="replay"></b></div></div>
+      <div class="grow"></div>
+      <div class="end"><button class="btn" id="savebtn" title="Save the network and conditions to the config file">Save</button></div>
+    </header>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button data-tab="network" class="on">Network</button>
+    <button data-tab="instruments" title="Decoded from frames on the bus, as a display would show it">Instruments</button>
+    <button data-tab="traffic">Traffic</button>
+    <button data-tab="sailing">Sailing</button>
+  </nav>
+  <main>
+    <div class="view on" id="v-network"></div>
+    <div class="view" id="v-instruments"></div>
+    <div class="view" id="v-traffic"></div>
+    <div class="view" id="v-sailing"></div>
+  </main>
+</div>
+<button id="testtab" aria-controls="test" aria-expanded="false">Test <span class="count" id="testcount"></span></button>
+<aside id="test" aria-label="Test">
+  <header><b>Test</b><button class="btn small" id="testclose">Close</button></header>
+  <div class="inner">
+    <div id="checks"></div>
+    <div class="subhead">Break something</div>
+    <div id="drills"></div>
+    <div class="row" style="padding:12px 14px">
+      <button class="btn" id="clearfaults">Clear faults</button>
+      <button class="btn" id="powercycle" title="Switch everything off and on again; clears the analyser">Power cycle</button>
+    </div>
+  </div>
+</aside>
+<div id="toast" role="status"></div>
+
+<script>
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const DEG = 180 / Math.PI, KN = 3600 / 1852;
+const fix = (x, n = 1) => (x == null || !isFinite(x)) ? "–" : Number(x).toFixed(n);
+const wrap180 = a => { a = ((a + 180) % 360 + 360) % 360 - 180; return a === -180 ? 180 : a; };
+const wrap360 = a => ((a % 360) + 360) % 360;
+
+let S = null, META = { kinds: [], drills: [], presets: [], pgn_defs: [], library: [], variants: {}, networks: [] };
+const UI = { tab: "network", device: null, sources: {}, logMode: "msgs", logPaused: false, filter: "", errorsOnly: false, pgnSel: null, openChecks: new Set(), track: [], truthTrack: [], depthHist: [], active: new Map() };
+const FRAMES = [], MSGS = [];
+const PGN_NAMES = {};
+
+function toast(msg, ok) {
+  const t = $("#toast"); t.textContent = msg; t.className = ok ? "" : "err"; t.style.display = "block";
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.style.display = "none", 3500);
+}
+async function api(path, body) {
+  try {
+    const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}) });
+    const j = await r.json();
+    if (!j.ok) toast(j.error || "The simulator refused that change");
+    return j;
+  } catch { toast("Could not reach the simulator"); return { ok: false }; }
+}
+function setPath(path, value) {
+  const o = {}; let cur = o; const parts = path.split(".");
+  parts.forEach((p, i) => { if (i === parts.length - 1) cur[p] = value; else cur = cur[p] = {}; });
+  return o;
+}
+function getPath(obj, path) { return path.split(".").reduce((o, k) => o?.[k], obj); }
+function syncInput(inp, v) {
+  if (document.activeElement === inp) return;
+  if (inp.type === "checkbox") inp.checked = !!v;
+  else if (inp.tagName === "SELECT") { if (inp.value !== String(v)) inp.value = v; }
+  else { const s = (typeof v === "number") ? String(+v.toFixed(4)) : (v ?? ""); if (inp.value !== s) inp.value = s; }
+}
+function readInput(inp) {
+  if (inp.type === "checkbox") return inp.checked;
+  if (inp.type === "number" || inp.type === "range") { const n = parseFloat(inp.value); return isFinite(n) ? n : 0; }
+  return inp.value;
+}
+
+/* ---------- live data ---------- */
+function connect() {
+  const es = new EventSource("/api/events");
+  es.onopen = () => $("#offline").style.display = "none";
+  es.onerror = () => { $("#offline").style.display = "block"; };
+  es.onmessage = e => {
+    const d = JSON.parse(e.data);
+    if (d.kinds) {
+      META = { kinds: d.kinds, drills: d.drills, presets: d.presets, pgn_defs: d.pgn_defs, library: d.library || [], variants: Object.fromEntries(d.variants || []), networks: d.networks || [] };
+      META.pgn_defs.forEach(p => PGN_NAMES[p.pgn] = p.name);
+      buildStatic();
+    }
+    S = d;
+    for (const f of d.frames || []) {
+      FRAMES.push(f);
+      if (!(f[4] & 1)) UI.active.set(parseInt(f[2], 16) & 0xff, f[1]);
+    }
+    for (const m of d.msgs || []) MSGS.push(m);
+    if (FRAMES.length > 6000) FRAMES.splice(0, FRAMES.length - 5000);
+    if (MSGS.length > 6000) MSGS.splice(0, MSGS.length - 5000);
+    if (d.frames_skipped || d.msgs_skipped) UI.skipped = (UI.skipped || 0) + d.frames_skipped + d.msgs_skipped;
+    collect();
+    render();
+  };
+}
+function decodeId(id) {
+  const prio = (id >>> 26) & 7, dp = (id >>> 24) & 3, pf = (id >>> 16) & 0xff, ps = (id >>> 8) & 0xff, src = id & 0xff;
+  return pf < 240 ? { prio, pgn: (dp << 16) | (pf << 8), src, dst: ps } : { prio, pgn: (dp << 16) | (pf << 8) | ps, src, dst: 255 };
+}
+const pgnName = p => PGN_NAMES[p] || ({ 126208: "NMEA Group Function", 126720: "Proprietary fast-packet", 61184: "Proprietary single-frame addressed", 127237: "Heading/Track control" }[p]) || (p >= 130816 ? "Proprietary fast-packet" : p >= 65280 && p <= 65535 ? "Proprietary single-frame" : "Unknown");
+function srcLabel(a) {
+  const s = S?.sources.find(x => x.src === a);
+  return s?.product?.model ? `${s.product.model} (${a})` : `address ${a}`;
+}
+function fmtUtc(u) { return new Date(u * 1000).toISOString().slice(11, 19); }
+
+function candidates(pgn, f) { return (S?.pgns || []).filter(p => p.pgn === pgn && (!f || f(p.v))); }
+function pick(key, pgn, f) {
+  const c = candidates(pgn, f);
+  let p = c.find(x => x.src === UI.sources[key]);
+  const rank = x => (x.age > 3 ? 2 : 0) + (pgn === 127250 && x.v.reference !== 0 ? 1 : 0);
+  if (!p) p = c.slice().sort((a, b) => rank(a) - rank(b) || a.age - b.age)[0];
+  return { p, c };
+}
+function busHeadingTrue() {
+  const { p } = pick("heading", 127250);
+  if (!p || p.v.heading == null) return { p, deg: null, ref: "" };
+  let h = p.v.heading * DEG;
+  if (p.v.reference === 1) {
+    let v = p.v.variation;
+    if (v == null) v = candidates(127250).map(x => x.v.variation).find(x => x != null);
+    if (v == null) return { p, deg: h, ref: "M" };
+    h += v * DEG;
+  }
+  return { p, deg: wrap360(h), ref: "T" };
+}
+function busWind() {
+  const { p } = pick("wind", 130306, v => v.reference === 2);
+  const stw = pick("stw", 128259, v => v.speedWaterReferenced != null).p?.v.speedWaterReferenced;
+  if (!p || p.v.windAngle == null) return { p };
+  const awa = wrap180(p.v.windAngle * DEG), aws = p.v.windSpeed;
+  const out = { p, awa, aws: aws * KN };
+  if (stw != null && aws != null) {
+    const x = aws * Math.cos(awa / DEG) - stw, y = aws * Math.sin(awa / DEG);
+    out.tws = Math.hypot(x, y) * KN; out.twa = Math.atan2(y, x) * DEG;
+    const h = busHeadingTrue();
+    if (h.deg != null) out.twd = wrap360(h.deg + out.twa);
+  }
+  return out;
+}
+function collect() {
+  const pos = pick("pos", 129025).p;
+  if (pos && pos.v.latitude != null && pos.age < 2) {
+    const last = UI.track[UI.track.length - 1];
+    if (!last || Math.hypot((pos.v.latitude - last[0]) * 111e3, (pos.v.longitude - last[1]) * 70e3) > 3) UI.track.push([pos.v.latitude, pos.v.longitude]);
+    if (UI.track.length > 4000) UI.track.shift();
+  }
+  const t = S.truth, lt = UI.truthTrack[UI.truthTrack.length - 1];
+  if (!lt || Math.hypot((t.lat - lt[0]) * 111e3, (t.lon - lt[1]) * 70e3) > 3) UI.truthTrack.push([t.lat, t.lon]);
+  if (UI.truthTrack.length > 4000) UI.truthTrack.shift();
+  const dp = pick("depth", 128267).p;
+  UI.depthHist.push([S.t, dp && dp.v.depth != null ? dp.v.depth + (dp.v.offset || 0) : null]);
+  while (UI.depthHist.length && S.t - UI.depthHist[0][0] > 120) UI.depthHist.shift();
+}
+
+/* What a device's own latest message says, for its label plate. */
+function readingFor(d) {
+  const st = p => S.pgns.find(x => x.src === d.address && x.pgn === p && x.age < 5);
+  for (const c of d.cfg.pgns.filter(c => c.enabled)) {
+    const s = st(c.pgn); if (!s) continue;
+    const v = s.v;
+    switch (c.pgn) {
+      case 130306: if (v.windAngle != null) return v.reference === 2 ? `AWA ${fix(Math.abs(wrap180(v.windAngle * DEG)), 0)}° ${wrap180(v.windAngle * DEG) < 0 ? "port" : "stbd"}` : `TWS ${fix(v.windSpeed * KN, 1)} kn`; break;
+      case 127250: if (v.heading != null) return `HDG ${fix(v.heading * DEG, 0)}°${v.reference === 1 ? "M" : "T"}`; break;
+      case 128259: if (v.speedWaterReferenced != null) return `STW ${fix(v.speedWaterReferenced * KN, 2)} kn`; if (v.speedGroundReferenced != null) return `SOG ${fix(v.speedGroundReferenced * KN, 2)} kn`; break;
+      case 128267: return v.depth != null ? `Depth ${fix(v.depth + (v.offset || 0), 1)} m` : "Depth lost";
+      case 129025: return v.latitude != null ? `Fix ${fix(Math.abs(v.latitude), 4)}°${v.latitude < 0 ? "S" : "N"}` : "No fix";
+      case 129026: if (v.sog != null) return `SOG ${fix(v.sog * KN, 2)} kn`; break;
+      case 127245: if (v.position != null) return `Rudder ${fix(v.position * DEG, 1)}°`; break;
+      case 127508: if (v.voltage != null) return `${fix(v.voltage, 2)} V`; break;
+      case 127257: if (v.roll != null) return `Heel ${fix(v.roll * DEG, 1)}°`; break;
+      case 130312: case 130316: { const k = v.actualTemperature ?? v.temperature; if (k != null) return `${fix(k - 273.15, 1)} °C`; break; }
+    }
+  }
+  return "";
+}
+
+/* ---------- static structure ---------- */
+function buildStatic() {
+  const sp = $("#speed"); sp.innerHTML = "";
+  const pause = document.createElement("button"); pause.id = "pausebtn"; pause.title = "Pause or resume";
+  pause.onclick = () => api("/api/control", { action: S.paused ? "resume" : "pause" });
+  sp.append(pause);
+  for (const x of [1, 2, 5, 10, 20]) {
+    const b = document.createElement("button"); b.textContent = x + "×"; b.dataset.speed = x; b.title = `${x} times real time`;
+    b.onclick = () => api("/api/control", { action: "speed", speed: x }); sp.append(b);
+  }
+  $("#savebtn").onclick = async () => { const j = await api("/api/control", { action: "save" }); if (j.ok) toast("Saved to " + j.saved, true); };
+  buildMeter(); buildNetwork(); buildInstruments(); buildTraffic(); buildSailing(); buildTest();
+}
+
+/* Moving-coil meter for bus load; hatched band from 40%. */
+function buildMeter() {
+  const cx = 40, cy = 38, r = 30;
+  let ticks = "";
+  for (let i = 0; i <= 10; i++) {
+    const a = Math.PI * (1 - i / 10), big = i % 5 === 0, r2 = big ? r - 7 : r - 4;
+    ticks += `<line x1="${cx + Math.cos(a) * r2}" y1="${cy - Math.sin(a) * r2}" x2="${cx + Math.cos(a) * r}" y2="${cy - Math.sin(a) * r}" stroke="#000" stroke-width="${big ? 1.5 : 1}"/>`;
+  }
+  const arc = (f0, f1, rr) => { const a0 = Math.PI * (1 - f0), a1 = Math.PI * (1 - f1); return `M${cx + Math.cos(a0) * rr} ${cy - Math.sin(a0) * rr} A${rr} ${rr} 0 0 1 ${cx + Math.cos(a1) * rr} ${cy - Math.sin(a1) * rr}`; };
+  $("#meter").innerHTML = `<rect x="1" y="1" width="78" height="42" rx="3" fill="#fff" stroke="#000"/>
+    <path d="${arc(0, 1, r)}" fill="none" stroke="#000"/>
+    <path d="${arc(0.4, 1, r - 2)}" fill="none" stroke="#000" stroke-width="4" stroke-dasharray="1 1.5"/>
+    ${ticks}
+    <g class="needle"><line x1="${cx}" y1="${cy}" x2="${cx - r + 3}" y2="${cy}" stroke="#000" stroke-width="1.4"/></g>
+    <circle cx="${cx}" cy="${cy}" r="3" fill="#000"/>`;
+}
+
+/* ---------- Test drawer ---------- */
+function setTest(open) {
+  $("#test").classList.toggle("open", open);
+  $("#testtab").setAttribute("aria-expanded", open);
+  if (open) { renderTest(); $("#testclose").focus(); }
+}
+function buildTest() {
+  $("#testtab").onclick = () => setTest(!$("#test").classList.contains("open"));
+  $("#testclose").onclick = () => { setTest(false); $("#testtab").focus(); };
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && $("#test").classList.contains("open")) { setTest(false); $("#testtab").focus(); } });
+  $("#drills").innerHTML = META.drills.map(x => `<button class="drill" data-k="${esc(x.key)}">${esc(x.title)}<span>${esc(x.what)}</span></button>`).join("");
+  $$("#drills .drill").forEach(b => b.onclick = () => {
+    const x = META.drills.find(d => d.key === b.dataset.k);
+    api("/api/drill", { key: x.key }).then(j => j.ok && toast(x.title + (j.device ? ": " + j.device : ""), true));
+  });
+  $("#clearfaults").onclick = () => api("/api/drill", { key: "clear_faults" }).then(j => j.ok && toast("Faults cleared", true));
+  $("#powercycle").onclick = () => api("/api/control", { action: "power_cycle" });
+}
+function renderTest() {
+  const cs = S.checks;
+  const serious = cs.filter(c => c.level !== "info").length;
+  $("#testcount").textContent = serious ? serious : "";
+  $("#testtab").title = serious ? `${serious} finding${serious > 1 ? "s" : ""} to look at` : "Nothing to report";
+  if (!$("#test").classList.contains("open")) return;
+  const box = $("#checks");
+  if (!cs.length) { box.innerHTML = `<div class="allgood">Nothing to report.</div>`; return; }
+  const ev = { bus: "on the bus", design: "from the wiring", sim: "simulator only" };
+  box.innerHTML = cs.map((c, i) => {
+    const key = c.title.replace(/[\d.]+/g, "#");
+    return `<div class="find ${esc(c.level)} ${UI.openChecks.has(key) ? "open" : ""}" data-i="${i}" data-key="${esc(key)}" tabindex="0">
+      <span class="mark"></span><div>${esc(c.title)}</div><span class="ev" title="Where the evidence comes from">${esc(ev[c.basis] || c.basis)}</span><div class="d">${esc(c.detail)}</div></div>`;
+  }).join("");
+  $$(".find", box).forEach(el => {
+    const open = () => {
+      const c = cs[+el.dataset.i], key = el.dataset.key;
+      UI.openChecks.has(key) ? UI.openChecks.delete(key) : UI.openChecks.add(key);
+      el.classList.toggle("open");
+      if (c.devices.length) { UI.device = c.devices[0]; setTab("network"); }
+    };
+    el.onclick = open; el.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } };
+  });
+}
+
+/* ---------- network: the schematic ---------- */
+const STATE_TXT = { online: "", claiming: "claiming", cannot_claim: "cannot claim", bus_off: "bus off", brownout: "brownout", unplugged: "unplugged", off: "off" };
+const FAULTED = new Set(["cannot_claim", "bus_off", "brownout", "unplugged"]);
+
+/* Generic shapes for devices without sourced dimensions. Sizes are
+   illustrative, not any product's. */
+const KIND_LOOK = {
+  gnss: { form: "dome", w: 100, h: 62 },
+  compass: { form: "puck", w: 110, h: 38 },
+  wind: { form: "wand", w: 420, h: 300 },
+  dst: { form: "thruhull", w: 60, h: 120 },
+  rudder: { form: "ram", w: 420, h: 64 },
+  battery: { form: "shunt", w: 110, h: 60 },
+  display: { form: "display", w: 110, h: 115, controls: "4 keys below the screen" },
+  gateway: { form: "dongle", w: 70, h: 32 },
+  processor: { form: "box", w: 180, h: 110 },
+  weather: { form: "ultrasonic", w: 100, h: 110 },
+};
+function lookOf(d) {
+  const base = KIND_LOOK[d.cfg.kind] || KIND_LOOK.processor;
+  if (d.cfg.kind === "rudder" && !d.cfg.library) return { ...base, sourced: false };
+  const e = d.cfg.library ? META.library.find(x => x.key === d.cfg.library) : null;
+  const a = e?.appearance;
+  if (!a) return { ...base, sourced: false };
+  const form = a.form || base.form;
+  let w = a.w_mm ?? a.diameter_mm ?? null, h = a.h_mm ?? null;
+  if ((form === "wand" || form === "arm") && a.arm_mm) w = a.arm_mm;
+  if (w == null) return { ...base, form, sourced: false, controls: a.controls ?? base.controls, orientation: a.orientation };
+  if (h == null) h = w * (base.h / base.w);
+  return { form, w, h, sourced: true, controls: a.controls, orientation: a.orientation, screen_in: a.screen_in };
+}
+const ABOVE = new Set(["wand", "dome", "ultrasonic"]);
+const MAX_W = 240, MAX_H = 170;
+
+/* Each drawing sits in a box (0,0)-(W,H); its cable leaves from the middle
+   of the bottom edge (above the bus) or the top edge (below). */
+function drawForm(look, W, H, live, d) {
+  const k = `stroke="#000" stroke-width="1.3" fill="#fff"`;
+  const led = (x, y) => `<circle cx="${x}" cy="${y}" r="2.6" ${live.on ? 'fill="#000" stroke="#000"' : k}/>`;
+  const brk = (x, y, w) => `<path d="M${x} ${y} l${w * .3} -4 l${w * .4} 8 l${w * .3} -4" fill="none" stroke="#000" stroke-width="1"/>`;
+  switch (look.form) {
+    case "display": {
+      const m = Math.min(W, H);
+      const ctl = (look.controls || "").toLowerCase();
+      const touch = /touch/.test(ctl) && !/\d+\s*(keys|buttons)/.test(ctl);
+      const nKeys = touch ? 0 : Math.min(+((ctl.match(/(\d+)\s*(?:keys|buttons)/) || [])[1] || 0), 9);
+      const side = /right/.test(ctl) ? "right" : /left/.test(ctl) ? "left" : "below";
+      const knob = /knob|rotary/.test(ctl);
+      const roundMid = /enter/.test(ctl) && nKeys >= 3;
+      let sx = W * .08, sy = H * .08, sW = W * .84, sH = H * .84;
+      if (nKeys || knob) {
+        if (side === "below") sH = H * (nKeys > 5 ? .5 : .62);
+        else { sW = W * .7; if (side === "left") sx = W * .22; }
+      }
+      let keys = "";
+      const kw = Math.max(4, m * .11), kh = Math.max(3, m * .06);
+      if (side === "below") {
+        const cols = nKeys > 5 ? Math.ceil(nKeys / 2) : nKeys, rows = nKeys > 5 ? 2 : 1;
+        const y0 = sy + sH + (H - sy - sH) * (rows === 2 ? .3 : .45);
+        for (let i = 0; i < nKeys; i++) {
+          const ci = i % cols, ri = Math.floor(i / cols), x = sx + (ci + .5) * sW / cols, y = y0 + ri * (kh * 2.4);
+          keys += roundMid && rows === 1 && ci === Math.floor(cols / 2) ? `<circle cx="${x}" cy="${y}" r="${kh * 1.1}" ${k}/>` : `<rect x="${x - kw / 2}" y="${y - kh / 2}" width="${kw}" height="${kh}" rx="1.5" ${k}/>`;
+        }
+      } else {
+        const x = side === "right" ? sx + sW + (W - sx - sW) / 2 : sx / 2;
+        for (let i = 0; i < nKeys; i++) {
+          const y = sy + (i + .5) * sH / nKeys;
+          keys += roundMid && i === Math.floor(nKeys / 2) ? `<circle cx="${x}" cy="${y}" r="${kh * 1.3}" ${k}/>` : `<rect x="${x - kh / 2}" y="${y - kw / 2}" width="${kh}" height="${kw}" rx="1.5" ${k}/>`;
+        }
+      }
+      if (knob) keys += `<circle cx="${W - sx * 1.5}" cy="${H - sy * 1.5}" r="${kh * 1.4}" ${k}/>`;
+      const big = Math.max(8, Math.min(sH * .42, sW * .26));
+      return `<rect x="0" y="0" width="${W}" height="${H}" rx="${m * .07}" ${k}/>
+        <rect x="${sx}" y="${sy}" width="${sW}" height="${sH}" rx="1.5" fill="#000"/>
+        ${sH > 18 ? `<text x="${sx + 4}" y="${sy + Math.max(8, big * .5)}" font-size="${Math.max(6, big * .36)}" style="fill:#fff">${esc(live.screenLabel)}</text>` : ""}
+        <text x="${sx + sW / 2}" y="${sy + sH * .5 + big * .38}" font-size="${big}" text-anchor="middle" class="din" style="fill:#fff">${esc(live.screenValue)}</text>
+        ${keys}${led(W - 5, 5)}`;
+    }
+    case "puck":
+      return `<rect x="0" y="${H * .15}" width="${W}" height="${H * .85}" rx="${H * .4}" ${k}/>
+        <path d="M${W / 2 - 6} ${H * .66} l6 -9 l6 9" fill="none" stroke="#000" stroke-width="1.2"/>
+        <line x1="${W * .12}" y1="${H * .38}" x2="${W * .88}" y2="${H * .38}" stroke="#000" stroke-width=".8"/>${led(W - 12, H * .64)}`;
+    case "dome":
+      return `<path d="M${W * .04} ${H * .78} A${W * .46} ${H * .74} 0 0 1 ${W * .96} ${H * .78} Z" ${k}/>
+        <rect x="${W * .02}" y="${H * .78}" width="${W * .96}" height="${H * .12}" ${k}/>
+        <rect x="${W * .4}" y="${H * .9}" width="${W * .2}" height="${H * .1}" ${k}/>
+        <path d="M${W * .2} ${H * .55} A${W * .3} ${H * .3} 0 0 1 ${W * .8} ${H * .55}" fill="none" stroke="#000" stroke-width=".7" stroke-dasharray="2 2"/>${led(W / 2, H * .68)}`;
+    case "wand": {
+      const armY = H * .12, mastX = W * .5;
+      const brokenArm = look.w > MAX_W, brokenMast = look.h > MAX_H;
+      return `<rect x="${mastX - 4}" y="${armY}" width="8" height="${H - armY}" ${k}/>
+        ${brokenMast ? `<rect x="${mastX - 9}" y="${H * .55 - 6}" width="18" height="12" fill="#fff"/>${brk(mastX - 9, H * .55 - 3, 18)}${brk(mastX - 9, H * .55 + 3, 18)}` : ""}
+        <rect x="${W * .06}" y="${armY - 3}" width="${W * .88}" height="6" ${k}/>
+        ${brokenArm ? `<rect x="${W * .26}" y="${armY - 7}" width="10" height="14" fill="#fff"/><path d="M${W * .26} ${armY - 7} l3 14 M${W * .26 + 7} ${armY - 7} l3 14" stroke="#000"/>` : ""}
+        <path d="M${W * .02} ${armY} l${W * .1} -${Math.min(14, H * .1)} l0 ${Math.min(28, H * .2)} Z" ${k}/>
+        <circle cx="${W * .94}" cy="${armY - 6}" r="5" ${k}/><circle cx="${W * .94 - 8}" cy="${armY + 4}" r="5" ${k}/><circle cx="${W * .94 + 6}" cy="${armY + 5}" r="5" ${k}/>
+        <rect x="${mastX - 9}" y="${H - 16}" width="18" height="16" rx="2" ${k}/>${led(mastX, H - 8)}`;
+    }
+    case "ultrasonic":
+      return `<ellipse cx="${W / 2}" cy="${H * .1}" rx="${W * .46}" ry="${H * .06}" ${k}/>
+        ${[0.18, 0.42, 0.58, 0.82].map(f => `<line x1="${W * f}" y1="${H * .14}" x2="${W * f}" y2="${H * .42}" stroke="#000" stroke-width="2"/>`).join("")}
+        <path d="M${W * .06} ${H * .42} L${W * .06} ${H * .9} A${W * .44} ${H * .06} 0 0 0 ${W * .94} ${H * .9} L${W * .94} ${H * .42} Z" ${k}/>
+        <ellipse cx="${W / 2}" cy="${H * .42}" rx="${W * .44}" ry="${H * .06}" ${k}/>${led(W / 2, H * .7)}`;
+    case "thruhull":
+      return `<rect x="0" y="${H * .3}" width="${W}" height="${H * .1}" fill="url(#hatch)" stroke="#000" stroke-width="1.3"/>
+        <rect x="${W * .12}" y="${H * .12}" width="${W * .76}" height="${H * .18}" rx="2" ${k}/>
+        <rect x="${W * .24}" y="0" width="${W * .52}" height="${H * .12}" ${k}/>
+        <rect x="${W * .24}" y="${H * .4}" width="${W * .52}" height="${H * .56}" ${k}/>
+        <rect x="${W * .3}" y="${H * .86}" width="${W * .4}" height="${H * .1}" fill="#000"/>${led(W * .5, H * .21)}`;
+    case "dongle": {
+      const lib = d?.cfg.library || "";
+      const port = /ydwg/.test(lib) ? `<path d="M${W * .74} ${H * .62} a8 8 0 0 1 11 -8 M${W * .74 + 3} ${H * .62} a4 4 0 0 1 6 -4" fill="none" stroke="#000"/>`
+        : /yden/.test(lib) ? `<rect x="${W * .7}" y="${H * .28}" width="${W * .18}" height="${H * .44}" ${k}/><rect x="${W * .74}" y="${H * .28}" width="${W * .1}" height="${H * .14}" fill="#000"/>`
+        : `<rect x="${W * .76}" y="${H * .35}" width="${W * .16}" height="${H * .3}" ${k}/>`;
+      return `<rect x="0" y="0" width="${W * .92}" height="${H}" rx="${H * .25}" ${k}/>${port}${led(W * .14, H / 2)}`;
+    }
+    case "shunt":
+      return `<rect x="${W * .12}" y="${H * .2}" width="${W * .76}" height="${H * .8}" rx="3" ${k}/>
+        <rect x="0" y="${H * .45}" width="${W * .18}" height="${H * .25}" ${k}/><rect x="${W * .82}" y="${H * .45}" width="${W * .18}" height="${H * .25}" ${k}/>
+        <circle cx="${W * .09}" cy="${H * .575}" r="${H * .07}" ${k}/><circle cx="${W * .91}" cy="${H * .575}" r="${H * .07}" ${k}/>${led(W * .5, H * .4)}`;
+    case "arm": {
+      const ang = live.rudder ?? 0;
+      return `<rect x="${W * .04}" y="${H * .55}" width="${W * .52}" height="${H * .45}" rx="3" ${k}/>
+        <rect x="${W * .14}" y="0" width="${W * .32}" height="${H * .58}" rx="4" ${k}/>
+        <circle cx="${W * .3}" cy="${H * .3}" r="4" ${k}/>
+        <g transform="rotate(${ang} ${W * .3} ${H * .3})"><rect x="${W * .3}" y="${H * .3 - 3}" width="${W * .68}" height="6" ${k}/><circle cx="${W * .9}" cy="${H * .3}" r="2" fill="#000"/></g>${led(W * .3, H * .78)}`;
+    }
+    case "ram": {
+      const f = Math.min(Math.max(((live.rudder ?? 0) + 30) / 60, 0), 1);
+      const body = W * .58, rod = W * (.12 + .26 * f);
+      return `<rect x="0" y="${H * .3}" width="${W * .06}" height="${H * .4}" ${k}/>
+        <rect x="${W * .05}" y="${H * .15}" width="${body}" height="${H * .7}" rx="${H * .3}" ${k}/>
+        <rect x="${W * .05 + body}" y="${H * .43}" width="${rod}" height="${H * .14}" ${k}/>
+        <circle cx="${W * .05 + body + rod + 5}" cy="${H * .5}" r="5" ${k}/>
+        <rect x="${W * .2}" y="0" width="${W * .12}" height="${H * .15}" ${k}/>${led(W * .4, H * .5)}`;
+    }
+    case "supply":
+      return `<line x1="${W / 2}" y1="${H * .55}" x2="${W / 2}" y2="${H}" stroke="#000" stroke-width="1.4"/>
+        <line x1="${W * .2}" y1="${H * .3}" x2="${W * .8}" y2="${H * .3}" stroke="#000" stroke-width="2"/>
+        <line x1="${W * .34}" y1="${H * .42}" x2="${W * .66}" y2="${H * .42}" stroke="#000" stroke-width="4"/>
+        <line x1="${W / 2}" y1="0" x2="${W / 2}" y2="${H * .3}" stroke="#000" stroke-width="1.4"/>
+        <rect x="${W / 2 - 5}" y="${H * .58}" width="10" height="${H * .18}" ${k}/>`;
+    default:
+      return `<rect x="${W * .08}" y="0" width="${W * .84}" height="${H}" rx="3" ${k}/>
+        <rect x="0" y="${H * .15}" width="${W * .1}" height="${H * .2}" ${k}/><rect x="${W * .9}" y="${H * .15}" width="${W * .1}" height="${H * .2}" ${k}/>
+        <circle cx="${W * .05}" cy="${H * .25}" r="2" ${k}/><circle cx="${W * .95}" cy="${H * .25}" r="2" ${k}/>
+        ${[.3, .45, .6, .75].map(f => `<rect x="${W * f - 3}" y="${H - 7}" width="6" height="7" ${k}/>`).join("")}
+        <line x1="${W * .2}" y1="${H * .55}" x2="${W * .8}" y2="${H * .55}" stroke="#000" stroke-width=".7"/>${led(W * .85, H * .12)}`;
+  }
+}
+
+const DISPLAY_SHOWS = [
+  ["Boat speed", () => { const v = pick("stw", 128259, v => v.speedWaterReferenced != null).p?.v.speedWaterReferenced; return v == null ? "--" : fix(v * KN, 1); }],
+  ["AWA", () => { const w = busWind(); return w.awa == null ? "--" : fix(Math.abs(w.awa), 0) + "°"; }],
+  ["Heading", () => { const h = busHeadingTrue(); return h.deg == null ? "--" : fix(h.deg, 0) + "°"; }],
+  ["Depth", () => { const p = pick("depth", 128267).p?.v; return p?.depth == null ? "--" : fix(p.depth + (p.offset || 0), 1); }],
+  ["TWS", () => { const w = busWind(); return w.tws == null ? "--" : fix(w.tws, 1); }],
+];
+
+function wrapText(s, maxPx, size) {
+  const maxC = Math.max(6, Math.floor(maxPx / (size * .56)));
+  const words = String(s).split(/\s+/), lines = [];
+  let cur = "";
+  for (const w of words) {
+    if ((cur + " " + w).trim().length <= maxC) cur = (cur + " " + w).trim();
+    else { if (cur) lines.push(cur); cur = w.length > maxC ? w.slice(0, maxC - 1) + "…" : w; }
+    if (lines.length === 2) break;
+  }
+  if (lines.length < 2 && cur) lines.push(cur);
+  if (lines.length === 2 && lines.join(" ").length < String(s).length && !lines[1].endsWith("…")) lines[1] = lines[1].slice(0, maxC - 1) + "…";
+  return lines.slice(0, 2);
+}
+
+let drag = null;
+function buildNetwork() {
+  $("#v-network").innerHTML = `
+    <section class="sheet">
+      <h2><span id="sheettitle">Network</span><span class="grow"></span>
+        <select id="netpreset" class="btn small" aria-label="Network to load"></select><button class="btn small" id="netbtn">Load</button>
+        <select id="addkind" class="btn small" aria-label="Device to add"></select><button class="btn small solid" id="addbtn">Add</button></h2>
+      <div class="paper"><svg id="sheet-svg" role="img" aria-label="Network schematic"></svg></div>
+      <div class="body row" style="border-top:1px solid #000">
+        <label class="f">Backbone m<input type="number" step="0.5" min="1" data-bb="length_m"></label>
+        <label class="f">Cable<select data-bb="cable"><option value="micro">Micro</option><option value="mid">Mid</option><option value="heavy">Heavy</option></select></label>
+        <label class="f">Supply V<input type="number" step="0.1" data-bb="supply_v"></label>
+        <label class="f">Power tee m<input type="number" step="0.5" data-bb="power_tap_m"></label>
+        <label class="c"><input type="checkbox" data-bb="powered"> Powered</label>
+        <label class="c"><input type="checkbox" data-bb="term_start"> Terminator at 0 m</label>
+        <label class="c"><input type="checkbox" data-bb="term_end"> Terminator at end</label>
+      </div>
+    </section>
+    <div id="inspector"></div>
+    <section class="sheet"><h2>On the bus</h2><div class="scroll"><table id="bustable"></table></div></section>
+    <section class="sheet" id="libcard"></section>`;
+  const makes = [...new Set(META.library.map(e => e.make))].sort();
+  $("#addkind").innerHTML = `<optgroup label="Generic">${META.kinds.map(k => `<option value="kind:${esc(k.key)}">${esc(k.title)}</option>`).join("")}</optgroup>` +
+    makes.map(m => `<optgroup label="${esc(m)}">${META.library.filter(e => e.make === m).map(e => `<option value="lib:${esc(e.key)}">${esc(e.model)}</option>`).join("")}</optgroup>`).join("");
+  $("#addbtn").onclick = () => addDevice($("#addkind").value);
+  $("#netpreset").innerHTML = META.networks.map(n => `<option value="${esc(n.key)}" title="${esc(n.what)}">${esc(n.title)}</option>`).join("");
+  $("#netbtn").onclick = async () => {
+    const n = META.networks.find(x => x.key === $("#netpreset").value);
+    if (!n || !confirm(`Replace the network with ${n.title}?\n\n${n.what}`)) return;
+    const j = await api("/api/network", { key: n.key });
+    if (j.ok) { UI.device = null; UI.sources = {}; toast(n.title + " loaded", true); }
+  };
+  $$("[data-bb]").forEach(inp => inp.onchange = () => api("/api/backbone", { [inp.dataset.bb]: readInput(inp) }));
+  renderLibrary();
+  initDrag();
+}
+async function addDevice(v) {
+  const [t, k] = v.split(":");
+  const j = await api("/api/device/add", t === "lib" ? { library: k } : { kind: k });
+  if (j.ok) { UI.device = j.id; setTab("network"); }
+}
+
+/* Connector slots: a tee every half metre (every metre on long backbones),
+   free unless another device or the power tee has it. */
+function slotStep() { return S.backbone.length_m > 30 ? 1 : 0.5; }
+function freeSlots(exceptId) {
+  const L = S.backbone.length_m, st = slotStep(), out = [];
+  const taken = S.devices.filter(d => d.cfg.id !== exceptId).map(d => d.cfg.tee_m);
+  if (exceptId !== "__power") taken.push(S.backbone.power_tap_m);
+  for (let m = st; m < L - 1e-6; m += st) {
+    const r = Math.round(m * 100) / 100;
+    if (!taken.some(t => Math.abs(t - r) < st / 2 - 1e-6)) out.push(r);
+  }
+  return out;
+}
+
+function layout(W) {
+  const bb = S.backbone, L = Math.max(bb.length_m, 1);
+  const x0 = 56, x1 = W - 56, sx = (x1 - x0) / L;
+  const items = S.devices.map(d => {
+    const look = lookOf(d);
+    let tee = d.cfg.tee_m;
+    if (drag && drag.id === d.cfg.id && drag.slot != null) tee = drag.slot;
+    return { d, look, tee, tx: x0 + Math.min(Math.max(tee, 0), L) * sx, side: ABOVE.has(look.form) ? "above" : "below" };
+  });
+  let ptee = bb.power_tap_m;
+  if (drag && drag.id === "__power" && drag.slot != null) ptee = drag.slot;
+  items.push({ power: true, look: { form: "supply", w: 60, h: 70 }, tee: ptee, tx: x0 + Math.min(Math.max(ptee, 0), L) * sx, side: "above" });
+  const gap = 14, plateW = 112, plateH = 48;
+  let s = 0.8;
+  const size = it => {
+    const dw = Math.min(it.look.w, MAX_W) * s, dh = Math.min(it.look.h, MAX_H) * s;
+    it.dw = it.power ? 34 : Math.max(dw, 12); it.dh = it.power ? 40 : Math.max(dh, 10);
+    it.w = it.power ? 70 : Math.max(it.dw, plateW); it.h = it.dh + (it.power ? 0 : plateH);
+  };
+  const fits = () => ["above", "below"].every(side => {
+    const g = items.filter(i => i.side === side);
+    return g.reduce((a, i) => a + i.w, 0) + gap * (g.length - 1) <= W - 16;
+  });
+  for (; ; s *= 0.9) { items.forEach(size); if (fits() || s < 0.3) break; }
+  const groups = {};
+  for (const side of ["above", "below"]) {
+    const g = items.filter(i => i.side === side).sort((a, b) => a.tx - b.tx);
+    let x = 8;
+    for (const it of g) { it.x = Math.max(it.tx - it.w / 2, x); x = it.x + it.w + gap; }
+    let right = W - 8;
+    for (let i = g.length - 1; i >= 0; i--) { const it = g[i]; if (it.x + it.w > right) it.x = right - it.w; right = it.x - gap; }
+    // Jog levels so the horizontal runs of drop cables never overlap.
+    const ends = [];
+    for (const it of g.slice().sort((a, b) => Math.min(a.tx, a.x + a.w / 2) - Math.min(b.tx, b.x + b.w / 2))) {
+      const lo = Math.min(it.tx, it.x + it.w / 2), hi = Math.max(it.tx, it.x + it.w / 2);
+      if (hi - lo < 1) { it.level = 0; continue; }
+      let lv = ends.findIndex(e => e < lo - 6);
+      if (lv < 0) { lv = ends.length; ends.push(0); }
+      ends[lv] = hi; it.level = lv;
+    }
+    groups[side] = { g, levels: ends.length };
+  }
+  const jogA = 20 + groups.above.levels * 7, jogB = 20 + groups.below.levels * 7;
+  const maxA = Math.max(0, ...groups.above.g.map(i => i.h)), maxB = Math.max(0, ...groups.below.g.map(i => i.h));
+  const busY = 24 + maxA + jogA;
+  for (const it of groups.above.g) { it.y = busY - jogA - it.h; it.jogY = busY - 14 - it.level * 7; }
+  for (const it of groups.below.g) { it.y = busY + jogB; it.jogY = busY + 14 + it.level * 7; }
+  const dimY = busY + jogB + maxB + 34;
+  return { above: groups.above.g, below: groups.below.g, x0, x1, sx, s, busY, dimY, H: dimY + 96 };
+}
+
+function initDrag() {
+  const svg = $("#sheet-svg");
+  const metresAt = clientX => {
+    const r = svg.getBoundingClientRect(), L = S.backbone.length_m, x0 = 56, x1 = Math.max(r.width, 640) - 56;
+    return Math.min(Math.max((clientX - r.left - x0) / ((x1 - x0) / L), 0), L);
+  };
+  svg.addEventListener("pointerdown", e => {
+    const g = e.target.closest("[data-id]"); if (!g) return;
+    drag = { id: g.dataset.id, x: e.clientX, moved: false, slot: null };
+    try { svg.setPointerCapture(e.pointerId); } catch (_) { }
+  });
+  svg.addEventListener("pointermove", e => {
+    if (!drag) return;
+    if (Math.abs(e.clientX - drag.x) > 4) drag.moved = true;
+    if (!drag.moved) return;
+    const m = metresAt(e.clientX), slots = freeSlots(drag.id);
+    drag.slot = slots.length ? slots.reduce((b, sl) => Math.abs(sl - m) < Math.abs(b - m) ? sl : b, slots[0]) : null;
+    renderSchematic();
+  });
+  const end = () => {
+    if (!drag) return;
+    const d = drag; drag = null;
+    if (!d.moved) { if (d.id !== "__power") { UI.device = UI.device === d.id ? null : d.id; render(); } return; }
+    if (d.slot == null) { render(); return; }
+    if (d.id === "__power") api("/api/backbone", { power_tap_m: d.slot });
+    else api("/api/device", { id: d.id, patch: { tee_m: d.slot } });
+  };
+  svg.addEventListener("pointerup", end);
+  svg.addEventListener("pointercancel", () => { drag = null; render(); });
+  svg.addEventListener("click", e => {
+    const t = e.target.closest(".term"); if (!t) return;
+    api("/api/backbone", { [t.dataset.k]: !S.backbone[t.dataset.k] });
+  });
+  svg.addEventListener("keydown", e => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const t = e.target.closest(".term");
+    if (t) { e.preventDefault(); api("/api/backbone", { [t.dataset.k]: !S.backbone[t.dataset.k] }); return; }
+    const g = e.target.closest("[data-id]"); if (!g || g.dataset.id === "__power") return;
+    e.preventDefault(); UI.device = g.dataset.id; render();
+  });
+}
+
+function renderSchematic() {
+  const svg = $("#sheet-svg"); if (!svg) return;
+  const W = Math.max(svg.getBoundingClientRect().width || 1000, 640);
+  const bb = S.backbone, L = bb.length_m;
+  const lay = layout(W);
+  const { x0, x1, sx, busY, dimY, H } = lay;
+  const all = [...lay.above, ...lay.below];
+  svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const cableW = bb.cable === "micro" ? 6 : bb.cable === "mid" ? 8 : 10;
+  let h = `<defs><pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" stroke="#000" stroke-width="1.2"/></pattern></defs>`;
+
+  // Drop cables first, so drawings sit on top of them.
+  for (const it of all) {
+    const cx = it.x + it.w / 2, end = it.side === "above" ? it.y + it.h : it.y;
+    const off = it.d && !it.d.cfg.enabled, long = it.d && it.d.cfg.drop_m > 6;
+    h += `<path d="M${it.tx} ${busY} V${it.jogY} H${cx} V${end}" fill="none" stroke="#000" stroke-width="${it.power ? 2 : 1.6}" ${off ? 'stroke-dasharray="1 4"' : long ? 'stroke-dasharray="6 3"' : ""}/>`;
+  }
+  // Backbone: a hollow cable with data pulses inside.
+  h += `<line x1="${x0}" y1="${busY}" x2="${x1}" y2="${busY}" stroke="#000" stroke-width="${cableW}"/>
+        <line x1="${x0}" y1="${busY}" x2="${x1}" y2="${busY}" stroke="#fff" stroke-width="${cableW - 3}"/>`;
+  if (!bb.powered) h += `<line x1="${x0}" y1="${busY}" x2="${x1}" y2="${busY}" stroke="url(#hatch)" stroke-width="${cableW - 3}"/>`;
+  h += pulseLine(x0, x1, busY, bb.powered);
+  for (const it of all) h += `<rect x="${it.tx - 5}" y="${busY - cableW / 2 - 3}" width="10" height="${cableW + 6}" fill="#fff" stroke="#000" stroke-width="1.3"/>`;
+  if (drag && drag.moved) {
+    for (const sl of freeSlots(drag.id)) {
+      const x = x0 + sl * sx, on = sl === drag.slot;
+      h += `<circle cx="${x}" cy="${busY}" r="${on ? 5 : 2.5}" fill="${on ? "#000" : "#fff"}" stroke="#000"/>`;
+    }
+  }
+  // Terminators: a solid plug when fitted, a hatched open end when missing.
+  for (const [k, x, dir] of [["term_start", x0, -1], ["term_end", x1, 1]]) {
+    const on = bb[k], bx = dir < 0 ? x - 26 : x;
+    h += `<g class="term" data-k="${k}" tabindex="0" role="button" aria-label="${on ? "Remove" : "Fit"} the terminator at ${k === "term_start" ? "0 m" : L + " m"}">
+      <title>${on ? "120 Ω terminator. Click to remove." : "No terminator. Click to fit one."}</title>
+      <rect x="${bx}" y="${busY - 11}" width="26" height="22" rx="4" fill="${on ? "#000" : "#fff"}" stroke="#000" stroke-width="1.5" ${on ? "" : 'stroke-dasharray="3 2"'}/>
+      <text x="${bx + 13}" y="${busY + 3.5}" font-size="8.5" text-anchor="middle" class="din" style="fill:${on ? "#fff" : "#000"}">${on ? "120Ω" : "open"}</text></g>`;
+  }
+  // Devices.
+  for (const it of all) {
+    const above = it.side === "above";
+    const cx = it.x + it.w / 2, dx = cx - it.dw / 2;
+    const dy = above ? it.y + (it.h - it.dh) : it.y;
+    if (it.power) {
+      h += `<g data-id="__power" class="dev" tabindex="0" role="button" aria-label="Power tee at ${fix(it.tee, 1)} m"><title>Power tee: drag along the backbone</title>
+        <rect x="${it.x}" y="${it.y}" width="${it.w}" height="${it.h}" fill="transparent"/>
+        <g transform="translate(${dx},${dy})">${drawForm(it.look, it.dw, it.dh, {}, null)}</g>
+        <text x="${cx + it.dw / 2 + 2}" y="${dy + it.dh * .4}" font-size="13" class="din">${bb.powered ? fix(bb.supply_v, 1) + " V" : "off"}</text></g>`;
+      continue;
+    }
+    const d = it.d, c = d.cfg;
+    const live = { on: c.enabled && S.t - (UI.active.get(d.address) ?? -9) < 0.3 };
+    if (it.look.form === "display") {
+      const idx = S.devices.filter(x => lookOf(x).form === "display").indexOf(d);
+      const [lab, fn] = DISPLAY_SHOWS[idx % DISPLAY_SHOWS.length];
+      const on = d.state === "online" && c.enabled;
+      live.screenLabel = on ? lab : ""; live.screenValue = on ? fn() : "";
+    }
+    if (it.look.form === "ram") live.rudder = S.truth.rudder;
+    if (it.look.form === "arm") { const st = S.pgns.find(x => x.src === d.address && x.pgn === 127245); live.rudder = st?.v.position != null ? st.v.position * DEG : 0; }
+    const bad = c.enabled && FAULTED.has(d.state);
+    const faults = Object.entries(c.faults).filter(([k, v]) => (typeof v === "boolean" && v) || (k === "noise_mult" || k === "rate_mult" ? v !== 1 : typeof v === "number" && v !== 0)).length;
+    const state = !c.enabled ? "unplugged" : STATE_TXT[d.state];
+    const reading = c.enabled && d.state === "online" ? readingFor(d) : "";
+    const addr = d.state === "cannot_claim" ? "254" : String(d.address);
+    const lines = wrapText(c.label + (faults ? " △" : ""), it.w - 4, 12);
+    const py = above ? it.y + 11 : it.y + it.dh + 15;
+    let plate = lines.map((ln, i) => `<text x="${cx}" y="${py + i * 13}" font-size="12" font-weight="600" text-anchor="middle">${esc(ln)}</text>`).join("");
+    const y2 = py + lines.length * 13;
+    plate += `<text x="${cx}" y="${y2}" font-size="11" text-anchor="middle" class="din">${esc(addr)}<tspan dx="8">${fix(d.voltage, 1)} V</tspan>${reading ? `<tspan dx="8">${esc(reading)}</tspan>` : ""}</text>`;
+    if (state) plate += `<rect x="${cx - state.length * 3.3 - 5}" y="${y2 + 4}" width="${state.length * 6.6 + 10}" height="14" fill="#000"/><text x="${cx}" y="${y2 + 15}" font-size="11" text-anchor="middle" style="fill:#fff">${esc(state)}</text>`;
+    const sel = UI.device === c.id;
+    h += `<g data-id="${esc(c.id)}" class="dev" tabindex="0" role="button" aria-label="${esc(c.label)}, address ${esc(addr)}${state ? ", " + esc(state) : ""}" opacity="${c.enabled ? 1 : .4}">
+      <title>${esc(c.label)}${it.look.sourced ? "" : ". Generic shape, illustrative size"}${faults ? ". Has fault settings" : ""}. Drag to move its tee.</title>
+      <rect x="${it.x - 4}" y="${it.y - 4}" width="${it.w + 8}" height="${it.h + 8}" fill="transparent" stroke="${sel ? "#000" : "none"}" stroke-dasharray="5 3"/>
+      <g transform="translate(${dx},${dy})">${drawForm(it.look, it.dw, it.dh, live, d)}${bad ? `<rect x="0" y="0" width="${it.dw}" height="${it.dh}" fill="url(#hatch)" opacity=".6"/>` : ""}</g>
+      <rect x="${cx - 4}" y="${above ? dy + it.dh - 1 : dy - 6}" width="8" height="7" rx="2" fill="#000"/>
+      ${plate}</g>`;
+  }
+  // Dimension line, to the backbone's scale.
+  const step = L > 60 ? 10 : L > 25 ? 5 : L > 10 ? 2 : 1;
+  h += `<line x1="${x0}" y1="${dimY}" x2="${x1}" y2="${dimY}" stroke="#000"/>
+        <line x1="${x0}" y1="${busY + 14}" x2="${x0}" y2="${dimY - 6}" stroke="#000" stroke-width=".5" stroke-dasharray="2 3"/>
+        <line x1="${x1}" y1="${busY + 14}" x2="${x1}" y2="${dimY - 6}" stroke="#000" stroke-width=".5" stroke-dasharray="2 3"/>
+        <text x="${x1 + 8}" y="${dimY + 4}" font-size="11" class="din">m</text>`;
+  for (let m = 0; m <= L + 1e-6; m += step) {
+    const x = x0 + m * sx;
+    h += `<line x1="${x}" y1="${dimY - 4}" x2="${x}" y2="${dimY + 4}" stroke="#000"/><text x="${x}" y="${dimY + 16}" font-size="11" text-anchor="middle" class="din">${m}</text>`;
+  }
+  // Title block.
+  const on = S.devices.filter(d => d.cfg.enabled);
+  const amps = on.reduce((a, d) => a + d.cfg.len * 0.05, 0), lens = on.reduce((a, d) => a + d.cfg.len, 0);
+  const pxPerMm = 96 / 25.4, ratio = Math.max(1, Math.round(pxPerMm / lay.s));
+  const tbW = Math.min(560, W - 20), tbX = W - tbW - 10, tbY = dimY + 30, cw = tbW / 4;
+  const cell = (i, top, val) => `<text x="${tbX + cw * i + 7}" y="${tbY + 13}" font-size="9" style="fill:#767676">${top}</text><text x="${tbX + cw * i + 7}" y="${tbY + 33}" font-size="15" class="din">${esc(val)}</text>`;
+  const barPx = 100 * lay.s;
+  h += `<rect x="${tbX}" y="${tbY}" width="${tbW}" height="46" fill="#fff" stroke="#000" stroke-width="1.5"/>
+    ${[1, 2, 3].map(i => `<line x1="${tbX + cw * i}" y1="${tbY}" x2="${tbX + cw * i}" y2="${tbY + 46}" stroke="#000"/>`).join("")}
+    ${cell(0, "Network", S.network_name || "Untitled")}${cell(1, "Backbone", `${L} m ${bb.cable}`)}${cell(2, "Load", `${fix(amps, 2)} A, ${lens} LEN`)}${cell(3, "Devices drawn at", `1:${ratio}`)}
+    <line x1="${tbX + cw * 4 - barPx - 8}" y1="${tbY + 30}" x2="${tbX + cw * 4 - 8}" y2="${tbY + 30}" stroke="#000" stroke-width="3"/>
+    <text x="${tbX + cw * 4 - 8}" y="${tbY + 42}" font-size="8" text-anchor="end" style="fill:#767676">100 mm</text>`;
+  svg.innerHTML = h;
+  $("#sheettitle").textContent = S.network_name || "Network";
+}
+/* Data pulses along the cable. The dash pattern's phase comes from the
+   clock, so re-rendering does not make the motion jump. */
+function pulseLine(x0, x1, y, powered) {
+  if (!powered) return "";
+  const lh = S.history[S.history.length - 1], fps = lh ? lh[2] : 0;
+  if (fps < 1) return "";
+  const dur = Math.max(0.35, Math.min(3, 60 / fps));
+  const delay = -((performance.now() / 1000) % dur);
+  return `<line class="pulse" x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="#000" stroke-width="2" stroke-dasharray="3 25" style="--dur:${dur}s;animation-delay:${delay}s"/>`;
+}
+
+function renderBackboneForm() { $$("[data-bb]").forEach(inp => syncInput(inp, S.backbone[inp.dataset.bb])); }
+
+const NAME_FIELDS = [["unique_number", "Unique number"], ["manufacturer_code", "Manufacturer"], ["device_function", "Function"], ["device_class", "Class"], ["device_instance", "Device instance"], ["system_instance", "System instance"], ["industry_group", "Industry group"]];
+const FAULTS = [
+  ["silent", "Silent", "c"], ["stuck", "Stuck values", "c"], ["na_data", "Sends 'not available'", "c"], ["intermittent", "Loose connector", "c"],
+  ["angle_offset_deg", "Angle offset °", "n", 0.5], ["scale_pct", "Speed or depth error %", "n", 1], ["noise_mult", "Noise ×", "n", 0.5], ["rate_mult", "Interval ×", "n", 0.25],
+  ["jitter_ms", "Jitter ms", "n", 5], ["babble_hz", "Babble frames/s", "n", 100], ["tx_error_pct", "Transceiver errors %", "n", 1],
+];
+const pgnList = l => l.length ? l.map(p => `<span title="${esc(pgnName(p))}">${p}</span>`).join(", ") : `<span class="muted">none</span>`;
+function sourcesHtml(list) {
+  return list.map((s, i) => /^https?:\/\//.test(s.url)
+    ? `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" title="${esc(s.url)}">${esc(s.what || "Source " + (i + 1))}</a>`
+    : esc(s.what)).join("; ");
+}
+function libBlock(c) {
+  const e = META.library.find(x => x.key === c.library);
+  if (!e) return "";
+  const rates = e.tx.map(p => `<tr><td class="n">${p.pgn}</td><td>${esc(pgnName(p.pgn))}</td><td class="n">${p.interval_ms ? p.interval_ms + " ms" : `<span class="muted" title="Not stated by the maker; canboat's usual interval is used">usual</span>`}</td><td>${e.simulated.includes(p.pgn) ? "simulated" : e.not_simulated.includes(p.pgn) ? `<span class="muted">not simulated</span>` : `<span class="muted">network management</span>`}${p.inferred ? " <b>inferred</b>" : ""}${p.note ? `<div class="muted">${esc(p.note)}</div>` : ""}</td></tr>`).join("");
+  const a = e.appearance;
+  return `<fieldset><legend>${esc(e.make)} ${esc(e.model)}</legend>
+    <p style="margin:0 0 8px;max-width:75ch">${esc(e.summary)}${e.notes ? " " + esc(e.notes) : ""}</p>
+    <div class="cols">
+      <div class="scroll"><table><tr><th class="n">PGN</th><th>Name</th><th class="n">Interval</th><th>In the simulator</th></tr>${rates || `<tr><td colspan="4" class="muted">Nothing documented.</td></tr>`}</table>
+        <p class="muted" style="margin:8px 0 0">Receives ${pgnList(e.rx)}</p></div>
+      <div>${e.settings.length ? `<table><tr><th>Setting</th><th>Default</th><th>Effect</th></tr>${e.settings.map(x => `<tr><td>${esc(x.name)}</td><td>${esc(x.default ?? "")}</td><td class="muted">${esc(x.effect ?? "")}</td></tr>`).join("")}</table>` : ""}
+        <p style="margin:8px 0 0">LEN ${e.len ?? "not found"}. Manufacturer code ${e.manufacturer_code ?? "not found"}. Class and function ${e.device_class != null ? e.device_class + " and " + e.device_function : "not published (generic used)"}. Model ID ${e.model_id ? `"${esc(e.model_id)}"` : "not published (model name used)"}.</p>
+        ${a ? `<p style="margin:6px 0 0">Drawn ${esc(a.w_mm ?? a.arm_mm ?? a.diameter_mm ?? "?")} by ${esc(a.h_mm ?? "?")} mm${a.notes ? ". " + esc(a.notes) : ""} ${a.sources ? sourcesHtml(a.sources) : ""}</p>` : `<p class="muted" style="margin:6px 0 0">No dimensions found, so it is drawn as a generic shape.</p>`}
+        ${e.gaps.length ? `<p class="muted" style="margin:6px 0 0">Gaps and conflicts: ${esc(e.gaps.join("; "))}.</p>` : ""}
+        <p style="margin:6px 0 0">${sourcesHtml(e.sources)}</p></div>
+    </div></fieldset>`;
+}
+
+function buildInspector(d) {
+  const c = d.cfg, box = $("#inspector");
+  box.dataset.id = c.id;
+  box.innerHTML = `<section class="sheet">
+    <h2><span class="dot" id="insdot"></span><span id="institle"></span><span class="grow"></span>
+      <button class="btn small" id="ins-reboot">Restart</button>
+      <button class="btn small" id="ins-unplug" title="Pull the drop cable for 5 seconds">Unplug 5 s</button>
+      <button class="btn small" id="ins-remove">Remove</button>
+      <button class="btn small" id="ins-close">Close</button></h2>
+    <div class="body">
+      <div class="cols">
+        <div>
+          <div class="row">
+            <label class="f">Label<input type="text" data-p="label"></label>
+            <label class="c"><input type="checkbox" data-p="enabled"> Plugged in</label>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <label class="f">Preferred address<input type="number" min="0" max="253" data-p="preferred_address"></label>
+            <label class="f">Data instance<input type="number" min="0" max="252" data-p="instance"></label>
+            <label class="f">Tee m<input type="number" step="0.5" data-p="tee_m"></label>
+            <label class="f">Drop m<input type="number" step="0.1" min="0" data-p="drop_m"></label>
+            <label class="f">LEN<input type="number" min="0" max="20" data-p="len"></label>
+          </div>
+          <div class="row" style="margin-top:10px">${NAME_FIELDS.map(([k, l]) => `<label class="f">${l}<input type="number" min="0" data-p="name.${k}"></label>`).join("")}
+            <label class="c"><input type="checkbox" data-p="name.arbitrary_address_capable"> Can pick another address</label></div>
+          <div class="row" style="margin-top:10px">
+            <label class="f">Model ID<input type="text" data-p="product.model_id"></label>
+            <label class="f">Software<input type="text" data-p="product.software_version"></label>
+            <label class="f">Serial<input type="text" data-p="product.serial"></label>
+          </div>
+          <p class="muted" style="margin:10px 0 0">NAME <span class="mono" id="ins-name"></span></p>
+        </div>
+        <div>
+          <table id="ins-can" style="margin-bottom:12px"></table>
+          <table id="ins-pgns"></table>
+        </div>
+      </div>
+      <fieldset><legend>Faults</legend>
+        <div class="row">${FAULTS.map(([k, l, t, st]) => t === "c" ? `<label class="c"><input type="checkbox" data-p="faults.${k}"> ${l}</label>` : `<label class="f">${l}<input type="number" step="${st}" data-p="faults.${k}"></label>`).join("")}</div>
+      </fieldset>
+      ${libBlock(c)}
+    </div></section>`;
+  $$("[data-p]", box).forEach(inp => inp.onchange = () => {
+    let v = readInput(inp);
+    const p = inp.dataset.p;
+    if (inp.type === "number" && !["tee_m", "drop_m"].includes(p) && !p.startsWith("faults.")) v = Math.round(v);
+    api("/api/device", { id: c.id, patch: setPath(p, v) });
+  });
+  $("#ins-close").onclick = () => { UI.device = null; render(); };
+  $("#ins-reboot").onclick = () => api("/api/device/action", { id: c.id, action: "reboot" });
+  $("#ins-unplug").onclick = () => api("/api/device/action", { id: c.id, action: "unplug", secs: 5 });
+  $("#ins-remove").onclick = () => confirm(`Remove ${c.label}?`) && api("/api/device/remove", { id: c.id }).then(() => { UI.device = null; });
+}
+function renderInspector() {
+  const box = $("#inspector");
+  const d = S.devices.find(x => x.cfg.id === UI.device);
+  if (!d) { box.innerHTML = ""; box.dataset.id = ""; return; }
+  if (box.dataset.id !== d.cfg.id) buildInspector(d);
+  const c = d.cfg;
+  $("#insdot").className = "dot " + (!c.enabled ? "" : FAULTED.has(d.state) ? "alarm" : d.state === "online" ? "on" : "");
+  $("#institle").textContent = c.label;
+  $("#ins-name").textContent = d.name_hex;
+  $$("[data-p]", box).forEach(inp => syncInput(inp, getPath(c, inp.dataset.p)));
+  const rows = [
+    ["State", !c.enabled ? "unplugged" : (STATE_TXT[d.state] || "online")],
+    ["Address", d.state === "cannot_claim" ? "254, could not claim" : d.address + (d.address_changes ? `, moved ${d.address_changes} times` : "")],
+    ["Voltage at connector", fix(d.voltage, 2) + " V"], ["Error counters, transmit and receive", `${d.tec}, ${d.rec}`],
+    ["Frames sent, heard", `${d.frames_tx}, ${d.frames_rx}`], ["Error frames, dropped", `${d.error_frames}, ${d.dropped}`],
+    ["Queue, restarts", `${d.queue}, ${Math.max(0, d.boots - 1)}`],
+  ];
+  if (c.kind === "rudder" && !c.library) rows.push(["Last angle order", d.order ? `${fix(d.order.deg, 1)}° from ${d.order.src}, ${fix(d.order.age, 1)} s ago` : "none"]);
+  $("#ins-can").innerHTML = rows.map(([k, v]) => `<tr><td class="muted">${k}</td><td class="n">${esc(v)}</td></tr>`).join("");
+  const pt = $("#ins-pgns");
+  const sig = c.pgns.map(p => p.pgn).join(",") + "|" + c.library;
+  if (pt.dataset.sig !== sig) {
+    pt.dataset.sig = sig;
+    pt.innerHTML = `<tr><th>Sends</th><th>PGN</th><th class="n">Every ms</th><th class="n">Measured</th></tr>` + (c.pgns.length ? c.pgns.map((p, i) => `<tr>
+      <td><input type="checkbox" data-pi="${i}" data-k="enabled" aria-label="Send ${p.pgn}"></td>
+      <td>${p.pgn} <span class="muted">${esc(pgnName(p.pgn))}</span>${META.variants[p.pgn] ? ` <select data-pi="${i}" data-k="variant" class="field" style="width:auto;font-size:12px" aria-label="Variant">${META.variants[p.pgn].map(v => `<option value="${esc(v)}">${esc(v.replace("_", " "))}</option>`).join("")}</select>` : ""}</td>
+      <td class="n"><input type="number" min="10" step="10" class="field" style="width:70px;text-align:right" data-pi="${i}" data-k="interval_ms" aria-label="Interval"></td>
+      <td class="n" data-hz="${p.pgn}"></td></tr>`).join("") : `<tr><td colspan="4" class="muted">Network management only.</td></tr>`);
+    $$("[data-pi]", pt).forEach(inp => inp.onchange = () => {
+      const cur = S.devices.find(x => x.cfg.id === UI.device).cfg.pgns.map(x => ({ ...x }));
+      cur[+inp.dataset.pi][inp.dataset.k] = readInput(inp);
+      api("/api/device", { id: c.id, patch: { pgns: cur } });
+    });
+  }
+  $$("[data-pi]", pt).forEach(inp => {
+    let v = c.pgns[+inp.dataset.pi][inp.dataset.k];
+    if (inp.dataset.k === "variant" && !v) v = META.variants[c.pgns[+inp.dataset.pi].pgn]?.[0] ?? "";
+    syncInput(inp, v);
+  });
+  $$("[data-hz]", pt).forEach(td => {
+    const s = S.pgns.find(x => x.pgn === +td.dataset.hz && x.src === d.address);
+    td.textContent = s && s.age < 5 ? fix(s.hz, 1) + " Hz" : "–";
+  });
+}
+
+function renderBusTable() {
+  const rows = S.sources.slice().sort((a, b) => a.src - b.src);
+  $("#bustable").innerHTML = `<tr><th class="n">Address</th><th>Model</th><th>NAME</th><th class="n">Class, function</th><th>Sends</th><th class="n">Frames</th><th class="n">Last heard</th></tr>` + rows.map(s => {
+    const n = s.name, dev = S.devices.find(d => d.address === s.src && d.state !== "off");
+    const sends = (S.pgns || []).filter(p => p.src === s.src && p.age < 10 && ![59904, 60928, 126464, 126996, 126993, 59392].includes(p.pgn)).map(p => p.pgn);
+    return `<tr class="click ${dev && dev.cfg.id === UI.device ? "sel" : ""}" data-dev="${dev ? esc(dev.cfg.id) : ""}">
+      <td class="n">${s.src}</td><td>${esc(s.product?.model || (s.src === 252 ? "This page's console" : ""))}${s.product ? `<div class="muted">${esc(s.product.software)}, ${esc(s.product.serial)}</div>` : ""}</td>
+      <td class="mono">${n ? esc(n.hex) : `<span class="muted">no claim seen</span>`}${n && !n.arbitrary_address_capable ? " fixed" : ""}</td>
+      <td class="n">${n ? n.device_class + ", " + n.device_function : ""}</td>
+      <td style="max-width:280px">${sends.join(", ")}</td>
+      <td class="n">${s.frames}</td>
+      <td class="n ${s.periodic && s.age > 5 ? "diff" : ""}">${fix(s.age, 1)} s</td></tr>`;
+  }).join("");
+  $$("#bustable tr[data-dev]").forEach(tr => tr.onclick = () => { if (tr.dataset.dev) { UI.device = tr.dataset.dev; render(); } });
+}
+
+function renderLibrary() {
+  const box = $("#libcard"), lib = META.library;
+  const makes = [...new Set(lib.map(e => e.make))].sort();
+  box.innerHTML = `<h2>Instrument library</h2><div class="scroll"><table>
+    <tr><th>Model</th><th>What it is</th><th>Simulated</th><th>Also sends</th><th class="n">LEN</th><th>Sources</th><th></th></tr>
+    ${makes.map(m => `<tr><td colspan="7" style="font-weight:700;padding-top:14px;border-bottom:1px solid #000">${esc(m)}</td></tr>` + lib.filter(e => e.make === m).map(e => `<tr>
+      <td style="min-width:150px"><b>${esc(e.model)}</b><div class="muted">${esc(e.category)}${e.native_n2k === false ? ", via " + esc(e.via || "an interface") : ""}</div></td>
+      <td style="max-width:340px">${esc(e.summary)}${e.gaps.length ? `<div class="muted" style="margin-top:3px">Gaps and conflicts: ${esc(e.gaps.join("; "))}</div>` : ""}</td>
+      <td style="max-width:170px">${pgnList(e.simulated)}</td>
+      <td style="max-width:150px">${pgnList(e.not_simulated)}</td>
+      <td class="n">${e.len ?? "?"}</td>
+      <td style="max-width:220px">${sourcesHtml(e.sources)}</td>
+      <td><button class="btn small" data-addlib="${esc(e.key)}">Add</button></td></tr>`).join("")).join("")}
+    </table></div>`;
+  $$("[data-addlib]", box).forEach(b => b.onclick = () => addDevice("lib:" + b.dataset.addlib));
+}
+
+/* ---------- instruments ---------- */
+const TILES = [
+  { key: "heading", title: "Heading", pgn: 127250, big: true },
+  { key: "wind", title: "Wind", pgn: 130306, f: v => v.reference === 2, big: true },
+  { key: "stw", title: "Boat speed", pgn: 128259, f: v => v.speedWaterReferenced != null },
+  { key: "cogsog", title: "Speed over ground", pgn: 129026 },
+  { key: "depth", title: "Depth", pgn: 128267 },
+  { key: "rudder", title: "Rudder", pgn: 127245, f: v => v.position != null },
+  { key: "attitude", title: "Heel", pgn: 127257 },
+  { key: "rot", title: "Rate of turn", pgn: 127251 },
+  { key: "pos", title: "Position", pgn: 129025 },
+  { key: "temp", title: "Sea temperature", pgn: 130312, f: v => v.source === 0 },
+  { key: "battery", title: "Battery", pgn: 127508 },
+  { key: "log", title: "Log", pgn: 128275 },
+];
+function buildInstruments() {
+  $("#v-instruments").innerHTML = `
+    <div class="faces">${TILES.map(t => `<div class="face ${t.big ? "big" : ""}" id="tile-${t.key}"><div class="k"><span>${t.title}</span><select data-src="${t.key}" aria-label="${t.title} source"></select></div><div class="body"></div><div class="s"><span class="age"></span><span class="extra"></span></div></div>`).join("")}</div>
+    <div class="cols" style="margin-top:18px">
+      <section class="sheet"><h2>Track<span class="grow"></span><label class="c" style="font-weight:400;font-size:13px"><input type="checkbox" id="showtruth" checked> True track, dashed</label></h2><svg id="track" height="320" style="width:100%;display:block"></svg></section>
+      <section class="sheet"><h2>Bus against truth</h2><table id="vs"></table></section>
+    </div>`;
+  $$("[data-src]").forEach(s => s.onchange = () => { UI.sources[s.dataset.src] = s.value === "" ? undefined : +s.value; render(); });
+}
+function dial(size, a1, a2, labels) {
+  const r = size / 2 - 4, c = size / 2;
+  let ticks = "";
+  for (let a = 0; a < 360; a += 10) {
+    const big = a % 30 === 0, rr = big ? r - 10 : r - 6, t = (a - 90) / DEG;
+    ticks += `<line x1="${c + Math.cos(t) * rr}" y1="${c + Math.sin(t) * rr}" x2="${c + Math.cos(t) * (r - 2)}" y2="${c + Math.sin(t) * (r - 2)}" stroke="#000" stroke-width="${big ? 1.6 : .8}"/>`;
+  }
+  const lab = labels.map(([a, s]) => { const t = (a - 90) / DEG; return `<text x="${c + Math.cos(t) * (r - 21)}" y="${c + Math.sin(t) * (r - 21) + 4}" font-size="11" text-anchor="middle" font-family="DIN Alternate, Arial Narrow">${s}</text>`; }).join("");
+  const needle = (a, hollow) => { if (a == null) return ""; const t = (a - 90) / DEG, len = hollow ? r - 18 : r - 8; return `<path d="M${c + Math.cos(t + 1.57) * 3} ${c + Math.sin(t + 1.57) * 3} L${c + Math.cos(t) * len} ${c + Math.sin(t) * len} L${c + Math.cos(t - 1.57) * 3} ${c + Math.sin(t - 1.57) * 3} Z" fill="${hollow ? "#fff" : "#000"}" stroke="#000" stroke-width="1.2"/>`; };
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${c}" cy="${c}" r="${r}" fill="#fff" stroke="#000" stroke-width="3"/><circle cx="${c}" cy="${c}" r="${r - 4}" fill="none" stroke="#000" stroke-width=".6"/>${ticks}${lab}${needle(a2, true)}${needle(a1, false)}<circle cx="${c}" cy="${c}" r="4" fill="#000"/></svg>`;
+}
+function renderInstruments() {
+  for (const t of TILES) {
+    const el = $("#tile-" + t.key); if (!el) continue;
+    const { p, c } = pick(t.key, t.pgn, t.f);
+    const sel = $("select", el);
+    const opts = `<option value="">Auto</option>` + c.map(x => `<option value="${x.src}">${esc(srcLabel(x.src))}</option>`).join("");
+    if (sel.dataset.o !== opts) { sel.innerHTML = opts; sel.dataset.o = opts; }
+    if (document.activeElement !== sel) sel.value = UI.sources[t.key] ?? "";
+    el.classList.toggle("stale", !!p && p.age > 3);
+    $(".age", el).textContent = p ? `${srcLabel(p.src)}, ${fix(p.hz, 1)} Hz` : "No source";
+    const v = p?.v || {};
+    let html = "", ex = "";
+    const n = (x, u, d = 1) => `<div class="v">${x == null ? "–" : fix(x, d)}<small>${u}</small></div>`;
+    switch (t.key) {
+      case "heading": {
+        const h = busHeadingTrue();
+        html = n(h.deg, "°" + (h.ref || ""), 0) + dial(156, h.deg == null ? null : 0, null, [[0, "N"], [90, "E"], [180, "S"], [270, "W"]].map(([a, s]) => [wrap360(a - (h.deg || 0)), s]));
+        ex = p ? (v.reference === 1 ? "Magnetic" + (h.ref === "T" ? " plus variation" : "") : "True") : "";
+        break;
+      }
+      case "wind": {
+        const w = busWind();
+        html = `<div class="v">${w.awa == null ? "–" : fix(Math.abs(w.awa), 0) + "°"}<small>${w.awa == null ? "" : w.awa < 0 ? "port" : "stbd"}</small> ${fix(w.aws, 1)}<small>kn</small></div>` + dial(156, w.awa, w.twa, [[0, "0"], [90, "90"], [270, "90"], [180, "180"]]);
+        ex = w.tws != null ? `True ${fix(Math.abs(w.twa), 0)}°, ${fix(w.tws, 1)} kn from ${fix(w.twd, 0)}°` : "True wind needs boat speed";
+        break;
+      }
+      case "stw": html = n(v.speedWaterReferenced != null ? v.speedWaterReferenced * KN : null, "kn", 2); break;
+      case "cogsog": html = n(v.sog != null ? v.sog * KN : null, "kn", 2); ex = v.cog != null ? `COG ${fix(v.cog * DEG, 0)}°${v.cogReference === 1 ? "M" : "T"}` : ""; break;
+      case "depth": html = n(v.depth != null ? v.depth + (v.offset || 0) : null, "m", 1) + spark(UI.depthHist, 170, 32); break;
+      case "rudder": {
+        const pos = v.position != null ? v.position * DEG : null;
+        const order = candidates(127245, x => x.angleOrder != null).filter(x => x.age < 3)[0];
+        const od = order ? order.v.angleOrder * DEG : null;
+        html = n(pos == null ? null : Math.abs(pos), "°" + (pos == null ? "" : pos < 0 ? " port" : " stbd"), 1) + rudderBar(pos, od);
+        ex = order ? `Order ${fix(od, 1)}° from ${order.src}` : "";
+        break;
+      }
+      case "attitude": html = `<div class="v">${v.roll == null ? "–" : fix(Math.abs(v.roll * DEG), 1)}<small>° ${v.roll == null ? "" : v.roll < 0 ? "port" : "stbd"}</small></div>`; ex = v.pitch != null ? `Pitch ${fix(v.pitch * DEG, 1)}°` : ""; break;
+      case "rot": html = n(v.rate != null ? v.rate * DEG * 60 : null, "°/min", 0); break;
+      case "pos": {
+        const g = candidates(129029)[0]?.v;
+        html = `<div class="v" style="font-size:19px">${v.latitude == null ? "–" : fmtLat(v.latitude) + "<br>" + fmtLon(v.longitude)}</div>`;
+        ex = g ? `${g.numberOfSvs ?? "–"} satellites, HDOP ${fix(g.hdop, 1)}` : "";
+        break;
+      }
+      case "temp": html = n(v.actualTemperature != null ? v.actualTemperature - 273.15 : null, "°C", 1); break;
+      case "battery": html = n(v.voltage, "V", 2); ex = v.current != null ? `${fix(v.current, 1)} A` : ""; break;
+      case "log": html = n(v.log != null ? v.log / 1852 : null, "nm", 1); ex = v.tripLog != null ? `Trip ${fix(v.tripLog / 1852, 2)} nm` : ""; break;
+    }
+    $(".body", el).innerHTML = html; $(".extra", el).textContent = ex;
+  }
+  renderTrack(); renderVs();
+}
+function fmtLat(x) { const a = Math.abs(x), d = Math.floor(a); return `${d}°${((a - d) * 60).toFixed(3).padStart(6, "0")}'${x < 0 ? "S" : "N"}`; }
+function fmtLon(x) { const a = Math.abs(x), d = Math.floor(a); return `${String(d).padStart(3, "0")}°${((a - d) * 60).toFixed(3).padStart(6, "0")}'${x < 0 ? "W" : "E"}`; }
+function spark(hist, w, h) {
+  const pts = hist.filter(x => x[1] != null); if (pts.length < 2) return "";
+  const t0 = hist[0][0], t1 = hist[hist.length - 1][0] || t0 + 1;
+  const vs = pts.map(p => p[1]), lo = Math.min(...vs), hi = Math.max(...vs) + 0.01;
+  const d = pts.map((p, i) => `${i ? "L" : "M"}${((p[0] - t0) / (t1 - t0 || 1) * w).toFixed(1)},${(2 + (p[1] - lo) / (hi - lo) * (h - 4)).toFixed(1)}`).join("");
+  return `<svg width="${w}" height="${h}"><path d="${d}" fill="none" stroke="#000" stroke-width="1.4"/></svg>`;
+}
+function rudderBar(pos, order) {
+  const w = 170, c = w / 2, s = c / 35, m = x => c + Math.max(-35, Math.min(35, x)) * s;
+  return `<svg width="${w}" height="26"><defs><pattern id="rhatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="4" stroke="#000" stroke-width="1.5"/></pattern></defs>
+    <rect x="0" y="9" width="${w}" height="8" fill="#fff" stroke="#000"/>
+    <line x1="${c}" x2="${c}" y1="3" y2="23" stroke="#000"/>
+    ${pos != null ? `<rect x="${Math.min(c, m(pos))}" y="9" width="${Math.abs(m(pos) - c)}" height="8" fill="${pos < 0 ? "url(#rhatch)" : "#000"}"/>` : ""}
+    ${order != null ? `<path d="M${m(order) - 5} 2 L${m(order) + 5} 2 L${m(order)} 9 Z" fill="#000"/>` : ""}</svg>`;
+}
+function renderTrack() {
+  const svg = $("#track"); if (!svg) return;
+  const W = svg.getBoundingClientRect().width || 500, H = 320;
+  const showTruth = $("#showtruth").checked;
+  const all = UI.track.concat(showTruth ? UI.truthTrack : []);
+  if (all.length < 2) { svg.innerHTML = `<text x="12" y="24" font-size="13">Waiting for positions on the bus.</text>`; return; }
+  const lats = all.map(p => p[0]), lons = all.map(p => p[1]);
+  const latc = (Math.min(...lats) + Math.max(...lats)) / 2, k = Math.cos(latc / DEG);
+  const spanY = (Math.max(...lats) - Math.min(...lats)) * 111e3, spanX = (Math.max(...lons) - Math.min(...lons)) * 111e3 * k;
+  const sc = Math.min((W - 30) / Math.max(spanX, 50), (H - 30) / Math.max(spanY, 50));
+  const lon0 = (Math.min(...lons) + Math.max(...lons)) / 2;
+  const P = p => [W / 2 + (p[1] - lon0) * 111e3 * k * sc, H / 2 - (p[0] - latc) * 111e3 * sc];
+  const path = arr => arr.map((p, i) => { const [x, y] = P(p); return `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`; }).join("");
+  const last = P(UI.track[UI.track.length - 1] || UI.truthTrack[UI.truthTrack.length - 1]);
+  const h = busHeadingTrue().deg ?? 0;
+  const bar = Math.pow(10, Math.floor(Math.log10(Math.max(spanX, spanY, 50) / 3)));
+  svg.innerHTML = `${showTruth ? `<path d="${path(UI.truthTrack)}" fill="none" stroke="#767676" stroke-dasharray="3 3"/>` : ""}
+    <path d="${path(UI.track)}" fill="none" stroke="#000" stroke-width="1.6"/>
+    <g transform="translate(${last[0]},${last[1]}) rotate(${h})"><path d="M0,-10 L6,7 L0,3 L-6,7 Z" fill="#000"/></g>
+    <g transform="translate(${W - 22},28)"><path d="M0,-12 L5,4 L0,1 L-5,4 Z" fill="#000"/><text x="0" y="16" font-size="11" text-anchor="middle">N</text></g>
+    <line x1="14" x2="${14 + bar * sc}" y1="${H - 14}" y2="${H - 14}" stroke="#000" stroke-width="3"/><text x="14" y="${H - 20}" font-size="11">${bar >= 1000 ? bar / 1000 + " km" : bar + " m"}</text>`;
+}
+function renderVs() {
+  const t = S.truth, h = busHeadingTrue(), w = busWind();
+  const g = k => { const tl = TILES.find(x => x.key === k); return pick(k, tl.pgn, tl.f).p?.v || {}; };
+  const dep = g("depth"), stw = g("stw"), cs = g("cogsog"), rud = g("rudder"), att = g("attitude"), rot = g("rot");
+  const rows = [
+    ["Heading true", h.deg, t.heading, "°", 0, true, 3], ["Apparent wind angle", w.awa, t.awa, "°", 0, true, 6],
+    ["Apparent wind speed", w.aws, t.aws, "kn", 1, false, 1.5], ["True wind angle", w.twa, t.twa, "°", 0, true, 8],
+    ["True wind speed", w.tws, t.tws, "kn", 1, false, 2], ["Speed through water", stw.speedWaterReferenced != null ? stw.speedWaterReferenced * KN : null, t.bsp, "kn", 2, false, 0.4],
+    ["Speed over ground", cs.sog != null ? cs.sog * KN : null, t.sog, "kn", 2, false, 0.3], ["Course over ground", cs.cog != null ? cs.cog * DEG : null, t.cog, "°", 0, true, 5],
+    ["Depth below waterline", dep.depth != null ? dep.depth + (dep.offset || 0) : null, t.depth, "m", 1, false, 0.5], ["Rudder", rud.position != null ? rud.position * DEG : null, t.rudder, "°", 1, false, 1],
+    ["Heel", att.roll != null ? att.roll * DEG : null, t.heel, "°", 1, false, 2], ["Rate of turn", rot.rate != null ? rot.rate * DEG : null, t.yaw_rate, "°/s", 2, false, 0.5],
+  ];
+  $("#vs").innerHTML = `<tr><th></th><th class="n">Bus</th><th class="n">Truth</th><th class="n">Difference</th></tr>` + rows.map(([l, b, tr, u, d, ang, tol]) => {
+    const diff = b == null ? null : ang ? wrap180(b - tr) : b - tr;
+    return `<tr><td>${l}</td><td class="n">${b == null ? "–" : fix(b, d) + " " + u}</td><td class="n">${fix(tr, d)} ${u}</td><td class="n ${diff != null && Math.abs(diff) > tol ? "diff" : "muted"}">${diff == null ? "" : (diff > 0 ? "+" : "") + fix(diff, d)}</td></tr>`;
+  }).join("");
+}
+
+/* ---------- traffic ---------- */
+function buildTraffic() {
+  $("#v-traffic").innerHTML = `
+    <div class="cols">
+      <section class="sheet"><h2>Bus load<span class="grow"></span><span class="din" id="loadnow"></span></h2><div class="body"><canvas class="chart" id="chart-load" aria-label="Bus load over two minutes"></canvas></div></section>
+      <section class="sheet"><h2>Frames per second<span class="grow"></span><span class="din" id="fpsnow"></span></h2><div class="body"><canvas class="chart" id="chart-fps" aria-label="Frames and error frames per second over two minutes"></canvas></div></section>
+    </div>
+    <div class="cols">
+      <section class="sheet"><h2>PGNs by source</h2>
+        <div class="scroll" style="max-height:360px"><table id="pgntable"></table></div>
+        <div class="body"><div class="detail" id="pgndetail">Select a row to see every field.</div></div></section>
+      <section class="sheet"><h2>Live log<span class="grow"></span>
+        <span class="seg" id="logmode"><button data-m="msgs" class="on">Messages</button><button data-m="frames">Frames</button></span>
+        <button class="btn small" id="logpause">Pause</button></h2>
+        <div class="body row" style="padding-bottom:0">
+          <input id="logfilter" class="field" placeholder="Filter by PGN, src:5, or text" style="flex:1;min-width:200px;font-family:var(--sans);font-size:14px" aria-label="Filter the log">
+          <label class="c"><input type="checkbox" id="logerr"> Error frames only</label>
+        </div>
+        <div class="scroll" style="max-height:330px;margin-top:8px"><table class="log" id="log"></table></div>
+        <div class="body"><div class="detail" id="logdetail">Select a line to decode it.</div></div></section>
+    </div>
+    <div class="cols">
+      <section class="sheet"><h2>Send a frame</h2><div class="body">
+        <div class="row">
+          <label class="f">Priority<input type="number" min="0" max="7" value="6" id="in-prio"></label>
+          <label class="f">PGN<input type="number" min="0" value="59904" id="in-pgn"></label>
+          <label class="f">Source<input type="number" min="0" max="255" value="252" id="in-src"></label>
+          <label class="f">Destination<input type="number" min="0" max="255" value="255" id="in-dst"></label>
+          <label class="f" style="flex:1;min-width:150px">Data, hex<input type="text" value="14 F0 01" id="in-data" style="width:100%"></label>
+          <button class="btn solid" id="in-send">Send</button>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <label class="f" style="flex:1;min-width:220px">Raw frame, identifier then bytes<input type="text" id="in-raw" placeholder="18EAFFFC 14 F0 01" style="width:100%;font-family:var(--mono);font-size:13px"></label>
+          <button class="btn" id="in-rawsend">Send raw</button>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <span class="muted">Ask every device for its</span>
+          <button class="btn small" data-req="60928">address claim</button>
+          <button class="btn small" data-req="126996">product information</button>
+          <button class="btn small" data-req="126464">PGN lists</button>
+          <button class="btn small" data-req="126993">heartbeat</button>
+        </div></div></section>
+      <section class="sheet"><h2>Capture and replay</h2><div class="body">
+        <div class="row">
+          <a class="btn" href="/api/capture?format=candump" download>Download candump</a>
+          <a class="btn" href="/api/capture?format=ydraw" download>Download Yacht Devices RAW</a>
+          <button class="btn" id="capclear">Clear</button>
+          <span class="muted"><span id="capcount" class="din"></span> frames held</span>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <input type="file" id="replayfile" accept=".log,.txt,.can,.raw,.candump" aria-label="Log file to replay">
+          <label class="c"><input type="checkbox" id="replaymute" checked> Silence simulated sensors</label>
+          <button class="btn solid" id="replaygo">Replay</button>
+          <button class="btn" id="replaystop">Stop</button>
+        </div></div></section>
+    </div>`;
+  $$("#logmode button").forEach(b => b.onclick = () => { UI.logMode = b.dataset.m; $$("#logmode button").forEach(x => x.classList.toggle("on", x === b)); renderLog(true); });
+  $("#logpause").onclick = () => { UI.logPaused = !UI.logPaused; $("#logpause").textContent = UI.logPaused ? "Resume" : "Pause"; };
+  $("#logfilter").oninput = e => { UI.filter = e.target.value.trim().toLowerCase(); renderLog(true); };
+  $("#logerr").onchange = e => { UI.errorsOnly = e.target.checked; if (e.target.checked) { UI.logMode = "frames"; $$("#logmode button").forEach(x => x.classList.toggle("on", x.dataset.m === "frames")); } renderLog(true); };
+  $("#in-send").onclick = () => api("/api/inject", { priority: +$("#in-prio").value, pgn: +$("#in-pgn").value, src: +$("#in-src").value, dst: +$("#in-dst").value, data: $("#in-data").value }).then(j => j.ok && toast("Sent", true));
+  $("#in-rawsend").onclick = () => { const p = $("#in-raw").value.trim().split(/\s+/); api("/api/inject", { id: p[0] || "", data: p.slice(1).join("") }).then(j => j.ok && toast("Sent", true)); };
+  $$("[data-req]").forEach(b => b.onclick = () => api("/api/control", { action: "request", pgn: +b.dataset.req, dst: 255 }).then(j => j.ok && toast("Asked", true)));
+  $("#capclear").onclick = () => api("/api/control", { action: "clear_capture" });
+  $("#replaygo").onclick = async () => {
+    const f = $("#replayfile").files[0]; if (!f) return toast("Choose a log file first");
+    const j = await api("/api/replay", { name: f.name, text: await f.text(), mute: $("#replaymute").checked });
+    if (j.ok) toast(`Replaying ${j.frames} frames over ${fix(j.seconds, 0)} s${j.skipped_lines ? `, ${j.skipped_lines} lines not understood` : ""}`, true);
+  };
+  $("#replaystop").onclick = () => api("/api/control", { action: "stop_replay" });
+}
+function chart(cv, series, max, fmt) {
+  const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(r.width * dpr)) { cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); }
+  const g = cv.getContext("2d"), W = cv.width, H = cv.height; g.clearRect(0, 0, W, H);
+  g.font = `${10 * dpr}px "DIN Alternate", "Arial Narrow", sans-serif`; g.fillStyle = "#767676";
+  for (const f of [0, .5, 1]) { const y = H - 4 * dpr - f * (H - 14 * dpr); g.strokeStyle = "#dadada"; g.lineWidth = 1; g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); g.fillText(fmt(f * max), 3 * dpr, y - 2 * dpr); }
+  for (const { pts, dash } of series) {
+    if (pts.length < 2) continue;
+    g.strokeStyle = "#000"; g.lineWidth = 1.6 * dpr; g.setLineDash(dash ? [4 * dpr, 3 * dpr] : []); g.beginPath();
+    pts.forEach((v, i) => { const x = i / 119 * W, y = H - 4 * dpr - Math.min(v / max, 1) * (H - 14 * dpr); i ? g.lineTo(x, y) : g.moveTo(x, y); });
+    g.stroke();
+  }
+  g.setLineDash([]);
+}
+function renderTraffic() {
+  const hist = S.history, pad = a => Array(Math.max(0, 120 - a.length)).fill(0).concat(a);
+  chart($("#chart-load"), [{ pts: pad(hist.map(h => h[1] * 100)) }], 100, v => v.toFixed(0) + "%");
+  const fmax = Math.max(50, ...hist.map(h => h[2])) * 1.15;
+  chart($("#chart-fps"), [{ pts: pad(hist.map(h => h[2])) }, { pts: pad(hist.map(h => h[3])), dash: true }], fmax, v => v.toFixed(0));
+  const lh = hist[hist.length - 1];
+  $("#loadnow").textContent = (S.bus.load * 100).toFixed(1) + "%";
+  $("#fpsnow").textContent = lh ? `${fix(lh[2], 0)} frames, ${fix(lh[3], 1)} errors dashed` : "";
+  $("#capcount").textContent = S.bus.capture_frames.toLocaleString();
+  const rows = S.pgns.slice().sort((a, b) => a.pgn - b.pgn || a.src - b.src);
+  $("#pgntable").innerHTML = `<tr><th class="n">PGN</th><th>Name</th><th class="n">Source</th><th class="n">Hz</th><th class="n">Usual</th><th class="n">Count</th><th class="n">Age s</th></tr>` + rows.map(p => {
+    const k = p.pgn + ":" + p.src, slow = p.expected_hz && p.hz < p.expected_hz * 0.5 && p.age < 5;
+    return `<tr class="click ${UI.pgnSel === k ? "sel" : ""}" data-k="${k}"><td class="n">${p.pgn}</td><td class="clip" style="width:40%">${esc(p.name)}${p.fast ? ", fast packet" : ""}</td><td class="n">${p.src}</td><td class="n ${slow ? "diff" : ""}">${fix(p.hz, 1)}</td><td class="n muted">${p.expected_hz ? fix(p.expected_hz, 1) : "–"}</td><td class="n">${p.count}</td><td class="n ${p.expected_hz && p.age > 3 ? "diff" : ""}">${fix(p.age, 1)}</td></tr>`;
+  }).join("");
+  $$("#pgntable tr[data-k]").forEach(tr => tr.onclick = () => { UI.pgnSel = tr.dataset.k; renderTraffic(); });
+  const s = UI.pgnSel && S.pgns.find(p => p.pgn + ":" + p.src === UI.pgnSel);
+  $("#pgndetail").textContent = s ? `${s.pgn} ${s.name} from ${srcLabel(s.src)}\n\n` + s.h.map(([n, v]) => `${n.padEnd(34)} ${v}`).join("\n") : "Select a row to see every field.";
+  renderLog(false);
+}
+function renderLog(force) {
+  if (UI.logPaused && !force) return;
+  const f = UI.filter, srcf = f.startsWith("src:") ? +f.slice(4) : null, out = [];
+  if (UI.logMode === "frames") {
+    for (let i = FRAMES.length - 1; i >= 0 && out.length < 300; i--) {
+      const [, t, id, data, flags] = FRAMES[i];
+      if (UI.errorsOnly && !(flags & 1)) continue;
+      const c = decodeId(parseInt(id, 16));
+      if (f && (srcf != null ? c.src !== srcf : !(String(c.pgn).includes(f) || id.toLowerCase().includes(f) || data.toLowerCase().includes(f) || pgnName(c.pgn).toLowerCase().includes(f)))) continue;
+      const cls = flags & 2 ? "src-cli" : flags & 4 ? "src-con" : flags & 8 ? "src-rep" : "";
+      out.push(`<tr class="click ${flags & 1 ? "err" : ""}" data-f="${i}"><td class="${cls}">${fix(t, 3)}</td><td>${esc(id)}</td><td>${c.prio}</td><td>${c.pgn}</td><td>${c.src}→${c.dst === 255 ? "all" : c.dst}</td><td class="txt" style="font-family:var(--mono);font-size:12px">${esc(data)}${flags & 1 ? "  error" : ""}</td></tr>`);
+    }
+  } else {
+    for (let i = MSGS.length - 1; i >= 0 && out.length < 300; i--) {
+      const [, t, pgn, src, dst, , text] = MSGS[i];
+      if (UI.errorsOnly) continue;
+      if (f && (srcf != null ? src !== srcf : !(String(pgn).includes(f) || text.toLowerCase().includes(f) || pgnName(pgn).toLowerCase().includes(f)))) continue;
+      out.push(`<tr class="click" data-m="${i}"><td>${fix(t, 3)}</td><td>${pgn}</td><td>${src}→${dst === 255 ? "all" : dst}</td><td class="txt" title="${esc(text)}"><b>${esc(pgnName(pgn))}</b> ${esc(text)}</td></tr>`);
+    }
+  }
+  $("#log").innerHTML = (UI.logMode === "frames" ? `<tr><th>Time s</th><th>CAN id</th><th>P</th><th>PGN</th><th>From, to</th><th>Data</th></tr>` : `<tr><th>Time s</th><th>PGN</th><th>From, to</th><th>Decoded</th></tr>`) + out.join("");
+  $$("#log tr.click").forEach(tr => tr.onclick = () => {
+    if (tr.dataset.f) {
+      const [, , id, data, flags] = FRAMES[+tr.dataset.f], n = parseInt(id, 16), c = decodeId(n);
+      const how = flags & 2 ? "\nSent by a gateway client (the autopilot)." : flags & 4 ? "\nSent from this page." : flags & 8 ? "\nReplayed from a log." : "";
+      $("#logdetail").textContent = `CAN id ${id}: priority ${c.prio}, PGN ${c.pgn} (${pgnName(c.pgn)}), source ${c.src}, destination ${c.dst === 255 ? "everyone" : c.dst}\n` +
+        `${((n >>> 16) & 0xff) < 240 ? "PDU1, addressed: the PS byte is the destination." : "PDU2, broadcast: the PS byte is part of the PGN."}\nData ${data}${flags & 1 ? "\nDestroyed by a bus error; the sender retransmits it." : ""}${how}`;
+    } else {
+      const [, t, pgn, src, dst, prio, text] = MSGS[+tr.dataset.m];
+      $("#logdetail").textContent = `${pgn} ${pgnName(pgn)}\nFrom ${srcLabel(src)} to ${dst === 255 ? "everyone" : dst}, priority ${prio}, at ${fix(t, 3)} s\n\n${text.split(/ (?=\w+=)/).join("\n")}`;
+    }
+  });
+}
+
+/* ---------- sailing ---------- */
+function buildSailing() {
+  const f = (k, l, step) => `<label class="f">${l}<input type="number" step="${step}" data-env="${k}"></label>`;
+  $("#v-sailing").innerHTML = `
+    <div class="row" style="margin-bottom:16px" id="presets"></div>
+    <div class="cols">
+      <section class="sheet"><h2>Steering</h2><div class="body">
+        <span class="seg" id="helmmode"><button data-m="manual">Manual tiller</button><button data-m="hold">Hold course</button><button data-m="external">Autopilot</button></span>
+        <div class="row" style="margin-top:14px">
+          <label class="f">Course °T<input type="number" step="1" data-helm="course_deg"></label>
+          <button class="btn small" data-turn="-10">−10</button><button class="btn small" data-turn="-1">−1</button><button class="btn small" data-turn="1">+1</button><button class="btn small" data-turn="10">+10</button>
+          <label class="f">Order timeout s<input type="number" step="0.1" min="0.1" data-helm="order_timeout_s"></label>
+        </div>
+        <label class="f" style="margin-top:14px;display:flex">Manual rudder <span class="din" id="rudtxt" style="color:#000;font-size:15px"></span><input type="range" min="-30" max="30" step="0.5" data-helm="rudder_deg" style="width:100%"></label>
+        <p style="margin:12px 0 0" id="helmnote"></p></div></section>
+      <section class="sheet"><h2>What is really happening<span class="grow"></span><button class="btn small" id="resetboat">Reset boat</button></h2><table id="truth"></table></section>
+    </div>
+    <div class="cols">
+      <section class="sheet"><h2>Wind and sea</h2><div class="body">
+        <div class="row">${f("tws_kn", "Wind kn", 0.5)}${f("twd_deg", "From °T", 5)}${f("gust_pct", "Gusts %", 1)}${f("shift_deg", "Shifts °", 1)}</div>
+        <div class="row" style="margin-top:10px">${f("wave_height_m", "Waves m", 0.1)}${f("wave_period_s", "Period s", 0.5)}${f("wave_dir_deg", "From °T", 5)}</div>
+        <div class="row" style="margin-top:10px">${f("current_kn", "Stream kn", 0.1)}${f("current_set_deg", "Setting °T", 5)}</div></div></section>
+      <section class="sheet"><h2>Seabed and air</h2><div class="body">
+        <div class="row">${f("depth_m", "Depth at start m", 0.5)}${f("shoal_m_per_km", "Shoals m/km", 0.5)}${f("shoal_dir_deg", "Towards °T", 5)}</div>
+        <div class="row" style="margin-top:10px">${f("variation_deg", "Variation °, east +", 0.1)}${f("water_temp_c", "Sea °C", 0.1)}${f("air_temp_c", "Air °C", 0.1)}${f("pressure_hpa", "Pressure hPa", 1)}</div>
+        <div class="row" style="margin-top:10px">${f("seed", "Seed, on reset", 1)}</div></div></section>
+    </div>
+    <section class="sheet"><h2>Connecting the autopilot</h2><div class="body">
+      <p style="margin:0 0 6px;max-width:80ch">The simulator listens like a Yacht Devices gateway set to RAW, at <code id="gwaddr"></code>. Every frame arrives as a line; send one by writing its identifier and bytes. With steering on Autopilot, the simulated rudder drive follows the angle order in PGN 127245.</p>
+      <pre class="help" id="gwhelp"></pre>
+      <p style="margin:6px 0 0">A working client is in <code>crates/n2k/examples/ydraw_pilot.rs</code>.</p></div></section>`;
+  $("#presets").innerHTML = META.presets.map(p => `<button class="btn" data-preset="${esc(p.key)}">${esc(p.title)}</button>`).join("");
+  $$("[data-preset]").forEach(b => b.onclick = () => api("/api/preset", { key: b.dataset.preset }));
+  $$("[data-env]").forEach(inp => inp.onchange = () => api("/api/world", { env: { [inp.dataset.env]: readInput(inp) } }));
+  $$("[data-helm]").forEach(inp => { inp.onchange = () => api("/api/world", { helm: { [inp.dataset.helm]: readInput(inp) } }); if (inp.type === "range") inp.oninput = inp.onchange; });
+  $$("#helmmode button").forEach(b => b.onclick = () => api("/api/world", { helm: { mode: b.dataset.m } }));
+  $$("[data-turn]").forEach(b => b.onclick = () => api("/api/world", { helm: { course_deg: wrap360(S.helm.course_deg + +b.dataset.turn) } }));
+  $("#resetboat").onclick = () => { UI.track = []; UI.truthTrack = []; api("/api/control", { action: "reset_world" }); };
+}
+function renderSailing() {
+  $$("[data-env]").forEach(inp => syncInput(inp, S.env[inp.dataset.env]));
+  $$("[data-helm]").forEach(inp => syncInput(inp, S.helm[inp.dataset.helm]));
+  $("#rudtxt").textContent = fix(S.helm.rudder_deg, 1) + "°";
+  $$("#helmmode button").forEach(b => b.classList.toggle("on", b.dataset.m === S.helm.mode));
+  const t = S.truth;
+  $("#helmnote").textContent = S.helm.mode === "external"
+    ? (t.external_timed_out ? `No angle order for over ${S.helm.order_timeout_s} s, so the drive is holding ${fix(t.rudder_order, 1)}°. ${S.gateway.clients} gateway client${S.gateway.clients === 1 ? "" : "s"} connected.` : `Following angle orders: ${fix(t.rudder_order, 1)}°.`)
+    : S.helm.mode === "hold" ? "A simple built-in helmsman holds the course, so the boat keeps sailing while nothing else steers." : "The rudder stays where you put it.";
+  const rows = [
+    ["Heading", fix(t.heading, 1) + "°T"], ["Boat speed", fix(t.bsp, 2) + " kn"], ["Over ground", `${fix(t.sog, 2)} kn at ${fix(t.cog, 0)}°T`],
+    ["True wind", `${fix(t.tws, 1)} kn from ${fix(t.twd, 0)}°T, angle ${fix(t.twa, 0)}°`], ["Apparent wind", `${fix(t.aws, 1)} kn at ${fix(t.awa, 0)}°`],
+    ["Heel, pitch", `${fix(t.heel, 1)}°, ${fix(t.pitch, 1)}°`], ["Leeway", fix(t.leeway, 1) + "°"], ["Rudder, order", `${fix(t.rudder, 1)}°, ${fix(t.rudder_order, 1)}°`],
+    ["Depth", fix(t.depth, 1) + " m"], ["Ram current", fix(t.ram_current, 2) + " A"], ["Sailed", fix(t.log_nm, 2) + " nm"], ["Position", `${fmtLat(t.lat)} ${fmtLon(t.lon)}`],
+  ];
+  $("#truth").innerHTML = rows.map(([k, v]) => `<tr><td>${k}</td><td class="n">${v}</td></tr>`).join("");
+  const [host, port] = S.gateway.addr.split(":");
+  $("#gwaddr").textContent = "tcp://" + S.gateway.addr;
+  $("#gwhelp").textContent = `nc ${host} ${port}\n# lines arrive like:\n10:00:01.234 R 09FD0205 03 4C 06 1B 21 FA FF FF\n# send a rudder angle order of +5° (0.0873 rad = 873 = 0x0369) from address 50:\n09F10D32 00 F8 69 03 FF 7F FF FF`;
+}
+
+/* ---------- header and dispatch ---------- */
+function renderHeader() {
+  $("#netname").textContent = S.network_name || "Untitled";
+  const np = $("#netpreset"), cur = META.networks.find(n => n.title === S.network_name);
+  if (np && cur && document.activeElement !== np && np.dataset.synced !== cur.key) { np.value = cur.key; np.dataset.synced = cur.key; }
+  $("#clock").textContent = `${fmtUtc(S.utc)}, ${fix(S.t, 0)} s`;
+  const pb = $("#pausebtn");
+  pb.classList.toggle("on", S.paused); pb.textContent = S.paused ? "Play" : "Pause";
+  $$("#speed [data-speed]").forEach(b => b.classList.toggle("on", +b.dataset.speed === S.speed && !S.paused));
+  const load = Math.min(1, S.bus.load);
+  const needle = $("#meter .needle"); if (needle) needle.style.transform = `rotate(${load * 180}deg)`;
+  $("#loadtxt").textContent = (load * 100).toFixed(0) + "%";
+  const lh = S.history[S.history.length - 1];
+  $("#fps").textContent = lh ? fix(lh[2], 0) : "0";
+  $("#eps").textContent = lh ? fix(lh[3], 1) : "0";
+  const g = S.gateway;
+  $("#gw").innerHTML = `<span class="dot ${g.up ? (g.clients ? "on" : "") : "alarm"}"></span><div><small>Gateway ${esc(g.addr)}</small><b>${g.up ? g.clients + " client" + (g.clients === 1 ? "" : "s") : "off the bus"}</b></div>`;
+  const r = S.replay;
+  $("#replaycell").style.display = r ? "" : "none";
+  if (r) $("#replay").textContent = `${r.name}, ${Math.round(r.done / r.total * 100)}%`;
+}
+function setTab(t) {
+  UI.tab = t;
+  $$("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  $$(".view").forEach(v => v.classList.toggle("on", v.id === "v-" + t));
+  render();
+}
+$$("#tabs button").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+function render() {
+  if (!S || !META.kinds.length) return;
+  renderHeader(); renderTest();
+  if (UI.tab === "network") { if (!drag) renderSchematic(); renderBackboneForm(); renderInspector(); renderBusTable(); }
+  else if (UI.tab === "instruments") renderInstruments();
+  else if (UI.tab === "traffic") renderTraffic();
+  else if (UI.tab === "sailing") renderSailing();
+}
+window.addEventListener("resize", render);
+connect();
+</script>
+</body>
+</html>

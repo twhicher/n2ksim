@@ -1,0 +1,12 @@
+[package]
+name = "n2ksim"
+description = "Simulated NMEA 2000 network with a web UI and a Yacht Devices RAW gateway over TCP."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+n2k.workspace = true
+serde.workspace = true
+serde_json.workspace = true

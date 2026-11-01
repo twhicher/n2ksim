@@ -1,0 +1,17 @@
+[workspace]
+resolver = "2"
+members = ["crates/n2k", "crates/n2ksim"]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+license = "UNLICENSED"
+publish = false
+
+[workspace.dependencies]
+n2k = { path = "crates/n2k" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+debug = 1
