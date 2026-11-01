@@ -14,6 +14,20 @@ Open http://127.0.0.1:8090. The gateway listens on `tcp://127.0.0.1:1457`.
 
 Options: `--port 8090`, `--gateway 127.0.0.1:1457` (use `0.0.0.0:1457` to reach it from another machine), `--config config/network.json` (loaded at start, written by **Save**), `--speed 5`.
 
+## Hosting it
+
+`--hosted` (or `N2KSIM_HOSTED=1`) runs it as a public demo: it listens on `0.0.0.0:$PORT`, gives each visitor their own simulation (kept by a cookie, cleared after 30 minutes idle, at most 25 at once), turns the gateway off, and offers Download instead of saving to disk. Changes are accepted only from the site's own pages, uploads are limited to 4 MB, and if `N2KSIM_PASSWORD` is set the page asks for it (any user name).
+
+The `Dockerfile` builds that. On Railway:
+
+```
+railway init --name n2ksim
+railway add --service n2ksim
+railway up --service n2ksim --ci
+railway domain --service n2ksim
+railway variables --service n2ksim --set N2KSIM_PASSWORD=...   # optional
+```
+
 ## What is on the bus
 
 A 22 m Mid backbone from the stern up the mast, powered at the nav station, with eight devices:

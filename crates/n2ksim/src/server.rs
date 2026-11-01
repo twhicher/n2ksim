@@ -2,8 +2,11 @@
 //! server-sent event stream with state four times a second plus every frame
 //! and decoded message.
 //!
-//! Listens on 127.0.0.1 by default and refuses changes whose Origin is not
-//! its own page.
+//! Locally it listens on 127.0.0.1, runs one simulation and refuses changes
+//! whose Origin is not its own page. Hosted (`--hosted`), it gives each
+//! visitor their own simulation (by cookie), checks changes come from the
+//! same site, can require a password, and limits uploads, connections and
+//! the number of simulations.
 
 use crate::device::{DevState, Origin};
 use crate::network::{template, DeviceKind, Network};
@@ -18,19 +21,157 @@ use serde_json::{json, Value as J};
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::path::PathBuf;
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 const PAGE: &str = include_str!("../static/index.html");
 const MAX_BODY: usize = 32 * 1024 * 1024;
+const MAX_BODY_HOSTED: usize = 4 * 1024 * 1024;
+const MAX_CONNECTIONS: usize = 200;
+const MAX_STREAMS_PER_VISITOR: usize = 4;
+const COOKIE: &str = "n2ksim";
 /// The web UI's own interface claims no address; it uses this one.
 pub const CONSOLE_ADDRESS: u8 = 252;
 
-pub struct Ctx {
+/// Settings for running on a public server.
+pub struct Hosted {
+    /// Required with HTTP Basic auth if set (any user name).
+    pub password: Option<String>,
+    /// Every new visitor starts from this.
+    pub template: Saved,
+    pub max_visitors: usize,
+    pub idle: Duration,
+}
+
+pub struct Visitor {
     pub sim: Arc<Mutex<Sim>>,
+    pub last_seen: Instant,
+    pub streams: usize,
+}
+
+pub struct Ctx {
+    /// The one simulation when running locally.
+    pub local: Option<Arc<Mutex<Sim>>>,
+    /// One simulation per visitor when hosted.
+    pub visitors: Mutex<HashMap<String, Visitor>>,
+    pub hosted: Option<Hosted>,
     pub port: u16,
     pub gateway_addr: String,
     pub config_path: PathBuf,
+    pub connections: AtomicUsize,
+}
+
+impl Ctx {
+    pub fn local(sim: Arc<Mutex<Sim>>, port: u16, gateway_addr: String, config_path: PathBuf) -> Self {
+        Ctx { local: Some(sim), visitors: Mutex::new(HashMap::new()), hosted: None, port, gateway_addr, config_path, connections: AtomicUsize::new(0) }
+    }
+
+    pub fn hosted(h: Hosted, port: u16) -> Self {
+        Ctx { local: None, visitors: Mutex::new(HashMap::new()), hosted: Some(h), port, gateway_addr: "off".into(), config_path: PathBuf::new(), connections: AtomicUsize::new(0) }
+    }
+
+    /// Every running simulation, for the clock thread.
+    pub fn all_sims(&self) -> Vec<Arc<Mutex<Sim>>> {
+        match &self.local {
+            Some(s) => vec![s.clone()],
+            None => self.visitors.lock().unwrap().values().map(|v| v.sim.clone()).collect(),
+        }
+    }
+
+    /// Drop visitors nobody has looked at for a while.
+    pub fn evict_idle(&self) {
+        if let Some(h) = &self.hosted {
+            let mut v = self.visitors.lock().unwrap();
+            v.retain(|_, x| x.streams > 0 || x.last_seen.elapsed() < h.idle);
+        }
+    }
+
+    fn touch(&self, id: &str) {
+        if let Some(v) = self.visitors.lock().unwrap().get_mut(id) {
+            v.last_seen = Instant::now();
+        }
+    }
+
+    /// The simulation for this request, and a new cookie id if one was made.
+    fn sim_for(&self, cookie: Option<&str>) -> Result<(Arc<Mutex<Sim>>, String, bool), &'static str> {
+        if let Some(s) = &self.local {
+            return Ok((s.clone(), String::new(), false));
+        }
+        let h = self.hosted.as_ref().expect("hosted when not local");
+        let mut map = self.visitors.lock().unwrap();
+        if let Some(id) = cookie {
+            if let Some(v) = map.get_mut(id) {
+                v.last_seen = Instant::now();
+                return Ok((v.sim.clone(), id.to_string(), false));
+            }
+        }
+        if map.len() >= h.max_visitors {
+            // Make room by dropping the longest-idle visitor without a page open.
+            let oldest = map.iter().filter(|(_, v)| v.streams == 0 && v.last_seen.elapsed() > Duration::from_secs(60)).min_by_key(|(_, v)| v.last_seen).map(|(k, _)| k.clone());
+            match oldest {
+                Some(k) => {
+                    map.remove(&k);
+                }
+                None => return Err("The simulator is full at the moment. Try again in a few minutes."),
+            }
+        }
+        let t = &h.template;
+        let sim = Arc::new(Mutex::new(Sim::new(t.network.clone(), t.env.clone(), t.helm.clone())));
+        let id = random_id();
+        map.insert(id.clone(), Visitor { sim: sim.clone(), last_seen: Instant::now(), streams: 0 });
+        Ok((sim, id, true))
+    }
+}
+
+/// 128 random bits as hex, from the operating system.
+fn random_id() -> String {
+    let mut b = [0u8; 16];
+    let ok = std::fs::File::open("/dev/urandom").and_then(|mut f| f.read_exact(&mut b)).is_ok();
+    if !ok {
+        // No /dev/urandom: fall back to the clock, which is guessable, so
+        // only reached on unusual systems.
+        let n = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
+        b = n.to_le_bytes();
+    }
+    b.iter().map(|x| format!("{x:02x}")).collect()
+}
+
+fn base64_decode(s: &str) -> Option<Vec<u8>> {
+    let val = |c: u8| -> Option<u32> {
+        Some(match c {
+            b'A'..=b'Z' => c - b'A',
+            b'a'..=b'z' => c - b'a' + 26,
+            b'0'..=b'9' => c - b'0' + 52,
+            b'+' => 62,
+            b'/' => 63,
+            _ => return None,
+        } as u32)
+    };
+    let s = s.trim().trim_end_matches('=').as_bytes();
+    let mut out = Vec::with_capacity(s.len() * 3 / 4);
+    for chunk in s.chunks(4) {
+        let mut n = 0u32;
+        for (i, &c) in chunk.iter().enumerate() {
+            n |= val(c)? << (18 - 6 * i);
+        }
+        let bytes = n.to_be_bytes();
+        out.extend_from_slice(&bytes[1..chunk.len()]);
+    }
+    Some(out)
+}
+
+/// Compare without stopping at the first difference.
+fn same(a: &[u8], b: &[u8]) -> bool {
+    a.len() == b.len() && a.iter().zip(b).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
+}
+
+struct ConnGuard<'a>(&'a AtomicUsize);
+impl Drop for ConnGuard<'_> {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::Relaxed);
+    }
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -64,15 +205,17 @@ fn respond(s: &mut TcpStream, status: &str, ctype: &str, extra: &str, body: &[u8
     let _ = s.write_all(body);
 }
 
-fn ok(s: &mut TcpStream, v: J) {
-    respond(s, "200 OK", "application/json", "", v.to_string().as_bytes());
-}
-
 fn err(s: &mut TcpStream, msg: &str) {
     respond(s, "400 Bad Request", "application/json", "", json!({"ok": false, "error": msg}).to_string().as_bytes());
 }
 
 fn handle(mut stream: TcpStream, ctx: &Ctx) {
+    let open = ctx.connections.fetch_add(1, Ordering::Relaxed) + 1;
+    let _guard = ConnGuard(&ctx.connections);
+    if open > MAX_CONNECTIONS {
+        respond(&mut stream, "503 Service Unavailable", "text/plain", "", b"too many connections");
+        return;
+    }
     let _ = stream.set_read_timeout(Some(Duration::from_secs(10)));
     let Ok(clone) = stream.try_clone() else { return };
     let mut reader = BufReader::new(clone);
@@ -84,29 +227,65 @@ fn handle(mut stream: TcpStream, ctx: &Ctx) {
     let method = parts.next().unwrap_or("").to_string();
     let target = parts.next().unwrap_or("/").to_string();
     let mut len = 0usize;
-    let mut origin = None;
+    let (mut origin, mut host, mut cookie, mut auth) = (None, None, None, None);
     loop {
         let mut h = String::new();
         if reader.read_line(&mut h).is_err() || h == "\r\n" || h.is_empty() {
             break;
         }
-        let lower = h.to_ascii_lowercase();
-        if let Some(v) = lower.strip_prefix("content-length:") {
-            len = v.trim().parse().unwrap_or(0);
-        } else if let Some(v) = lower.strip_prefix("origin:") {
-            origin = Some(v.trim().to_string());
+        let Some((name, value)) = h.split_once(':') else { continue };
+        let value = value.trim().to_string();
+        match name.trim().to_ascii_lowercase().as_str() {
+            "content-length" => len = value.parse().unwrap_or(0),
+            "origin" => origin = Some(value.to_ascii_lowercase()),
+            "host" => host = Some(value.to_ascii_lowercase()),
+            "authorization" => auth = Some(value),
+            "cookie" => {
+                cookie = value.split(';').filter_map(|c| c.trim().split_once('=')).find(|(k, _)| *k == COOKIE).map(|(_, v)| v.to_string()).filter(|v| v.len() == 32 && v.bytes().all(|b| b.is_ascii_hexdigit()));
+            }
+            _ => {}
         }
     }
+
+    if let Some(pw) = ctx.hosted.as_ref().and_then(|h| h.password.as_ref()) {
+        let given = auth.as_deref().and_then(|a| a.strip_prefix("Basic ")).and_then(base64_decode).and_then(|b| String::from_utf8(b).ok());
+        let pass_ok = given.as_deref().and_then(|g| g.split_once(':')).is_some_and(|(_, p)| same(p.as_bytes(), pw.as_bytes()));
+        if !pass_ok {
+            respond(&mut stream, "401 Unauthorized", "text/plain", "WWW-Authenticate: Basic realm=\"n2ksim\", charset=\"UTF-8\"\r\n", b"password needed");
+            return;
+        }
+    }
+
     let (path, query) = target.split_once('?').unwrap_or((&target, ""));
+    if method == "GET" && (path == "/" || path == "/index.html") && ctx.hosted.is_none() {
+        respond(&mut stream, "200 OK", "text/html; charset=utf-8", "", PAGE.as_bytes());
+        return;
+    }
+    let (sim, id, fresh) = match ctx.sim_for(cookie.as_deref()) {
+        Ok(x) => x,
+        Err(e) => {
+            respond(&mut stream, "503 Service Unavailable", "text/plain; charset=utf-8", "", e.as_bytes());
+            return;
+        }
+    };
+    let set_cookie = if fresh { format!("Set-Cookie: {COOKIE}={id}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=86400\r\n") } else { String::new() };
+
     if method == "GET" {
         match path {
-            "/" | "/index.html" => respond(&mut stream, "200 OK", "text/html; charset=utf-8", "", PAGE.as_bytes()),
+            "/" | "/index.html" => respond(&mut stream, "200 OK", "text/html; charset=utf-8", &set_cookie, PAGE.as_bytes()),
             "/api/state" => {
-                let v = snapshot(&ctx.sim.lock().unwrap(), ctx, true);
-                ok(&mut stream, v)
+                let v = snapshot(&sim.lock().unwrap(), ctx, true);
+                respond(&mut stream, "200 OK", "application/json", &set_cookie, v.to_string().as_bytes());
             }
-            "/api/events" => events(stream, ctx),
-            "/api/capture" => capture(&mut stream, ctx, query),
+            "/api/events" => events(stream, ctx, &sim, &id, &set_cookie),
+            "/api/capture" => capture(&mut stream, &sim, query),
+            "/api/export" => {
+                let body = {
+                    let s = sim.lock().unwrap();
+                    serde_json::to_string_pretty(&Saved { network: s.net.clone(), env: s.world.env.clone(), helm: s.world.helm.clone() }).unwrap_or_default()
+                };
+                respond(&mut stream, "200 OK", "application/json", "Content-Disposition: attachment; filename=\"n2ksim-network.json\"\r\n", body.as_bytes());
+            }
             _ => respond(&mut stream, "404 Not Found", "text/plain", "", b"not found"),
         }
         return;
@@ -115,13 +294,26 @@ fn handle(mut stream: TcpStream, ctx: &Ctx) {
         respond(&mut stream, "405 Method Not Allowed", "text/plain", "", b"");
         return;
     }
-    let allowed = [format!("http://127.0.0.1:{}", ctx.port), format!("http://localhost:{}", ctx.port)];
-    if origin.as_ref().is_some_and(|o| !allowed.contains(o)) {
+    // Changes must come from this site's own page. Locally the allowed
+    // origins are fixed, which also defeats DNS rebinding; hosted, the page's
+    // origin must match the host it was served from.
+    let same_site = match &ctx.hosted {
+        None => {
+            let allowed = [format!("http://127.0.0.1:{}", ctx.port), format!("http://localhost:{}", ctx.port)];
+            origin.as_ref().is_none_or(|o| allowed.contains(o))
+        }
+        Some(_) => match (&origin, &host) {
+            (Some(o), Some(h)) => *o == format!("https://{h}") || *o == format!("http://{h}"),
+            (None, _) => true,
+            _ => false,
+        },
+    };
+    if !same_site {
         respond(&mut stream, "403 Forbidden", "text/plain", "", b"cross-origin request refused");
         return;
     }
-    if len > MAX_BODY {
-        return err(&mut stream, "body too large");
+    if len > if ctx.hosted.is_some() { MAX_BODY_HOSTED } else { MAX_BODY } {
+        return err(&mut stream, "That upload is too large.");
     }
     let mut body = vec![0u8; len];
     if reader.read_exact(&mut body).is_err() {
@@ -133,11 +325,11 @@ fn handle(mut stream: TcpStream, ctx: &Ctx) {
         Err(_) => return err(&mut stream, "body is not JSON"),
     };
     let result = {
-        let mut sim = ctx.sim.lock().unwrap();
-        post(&mut sim, ctx, path, &body)
+        let mut s = sim.lock().unwrap();
+        post(&mut s, ctx, path, &body)
     };
     match result {
-        Ok(v) => ok(&mut stream, v),
+        Ok(v) => respond(&mut stream, "200 OK", "application/json", &set_cookie, v.to_string().as_bytes()),
         Err(e) => err(&mut stream, &e),
     }
 }
@@ -181,6 +373,7 @@ fn post(sim: &mut Sim, ctx: &Ctx, path: &str, b: &J) -> Result<J, String> {
             "clear_analyser" => sim.analyser.reset(),
             "clear_capture" => sim.ring.clear(),
             "stop_replay" => sim.replay = None,
+            "save" if ctx.hosted.is_some() => return Err("Saving to the server is off in the hosted version; use Download instead.".into()),
             "save" => {
                 let saved = Saved { network: sim.net.clone(), env: sim.world.env.clone(), helm: sim.world.helm.clone() };
                 let text = serde_json::to_string_pretty(&saved).map_err(|e| e.to_string())?;
@@ -359,10 +552,10 @@ fn post(sim: &mut Sim, ctx: &Ctx, path: &str, b: &J) -> Result<J, String> {
     Ok(json!({"ok": true}))
 }
 
-fn capture(stream: &mut TcpStream, ctx: &Ctx, query: &str) {
+fn capture(stream: &mut TcpStream, sim: &Arc<Mutex<Sim>>, query: &str) {
     let ydraw = query.contains("format=ydraw");
     let body = {
-        let s = ctx.sim.lock().unwrap();
+        let s = sim.lock().unwrap();
         let utc0 = s.world.env.start_utc;
         let mut out = String::with_capacity(s.ring.len() * 48);
         for r in s.ring.iter().filter(|r| !r.error) {
@@ -381,19 +574,49 @@ fn capture(stream: &mut TcpStream, ctx: &Ctx, query: &str) {
 }
 
 /// Server-sent events until the page goes away.
-fn events(mut stream: TcpStream, ctx: &Ctx) {
-    let head = "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nConnection: keep-alive\r\n\r\n";
+/// Counts a visitor's open pages, so their simulation is kept while any is open.
+struct StreamGuard<'a> {
+    ctx: &'a Ctx,
+    id: String,
+}
+impl Drop for StreamGuard<'_> {
+    fn drop(&mut self) {
+        if let Some(v) = self.ctx.visitors.lock().unwrap().get_mut(&self.id) {
+            v.streams = v.streams.saturating_sub(1);
+            v.last_seen = Instant::now();
+        }
+    }
+}
+
+fn events(mut stream: TcpStream, ctx: &Ctx, sim: &Arc<Mutex<Sim>>, id: &str, set_cookie: &str) {
+    let _guard = if ctx.hosted.is_some() {
+        let mut map = ctx.visitors.lock().unwrap();
+        let Some(v) = map.get_mut(id) else { return };
+        if v.streams >= MAX_STREAMS_PER_VISITOR {
+            drop(map);
+            respond(&mut stream, "429 Too Many Requests", "text/plain", "", b"too many open pages");
+            return;
+        }
+        v.streams += 1;
+        Some(StreamGuard { ctx, id: id.to_string() })
+    } else {
+        None
+    };
+    let head = format!("HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\n{set_cookie}Connection: keep-alive\r\n\r\n");
     if stream.write_all(head.as_bytes()).is_err() {
         return;
     }
     let (mut fseq, mut mseq) = {
-        let s = ctx.sim.lock().unwrap();
+        let s = sim.lock().unwrap();
         (s.frame_seq.saturating_sub(300), s.analyser.msg_seq.saturating_sub(300))
     };
     let mut full = true;
     loop {
+        if !id.is_empty() {
+            ctx.touch(id);
+        }
         let payload = {
-            let s = ctx.sim.lock().unwrap();
+            let s = sim.lock().unwrap();
             let mut v = snapshot(&s, ctx, full);
             full = false;
             const CAP: usize = 600;
@@ -576,6 +799,7 @@ pub fn snapshot(s: &Sim, ctx: &Ctx, full: bool) -> J {
         out["presets"] = scenarios::PRESETS.iter().map(|p| json!({"key": p.key, "title": p.title})).collect();
         out["pgn_defs"] = pgn::DEFS.iter().map(|d| json!({"pgn": d.pgn, "name": d.name, "fast": d.fast, "priority": d.priority, "interval_ms": d.interval_ms})).collect();
         out["config_path"] = json!(ctx.config_path.display().to_string());
+        out["hosted"] = json!(ctx.hosted.is_some());
         out["library"] = crate::library::entries()
             .iter()
             .map(|e| {

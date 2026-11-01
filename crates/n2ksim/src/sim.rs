@@ -54,6 +54,8 @@ pub struct Sim {
     pub t: f64,
     pub paused: bool,
     pub speed: f64,
+    /// Simulated time owed to the wall clock, for whoever runs the clock.
+    pub owed: f64,
     rng: Rng,
     pub bus_free_at: f64,
     busy: VecDeque<(f64, f64)>,
@@ -91,6 +93,7 @@ impl Sim {
             t: 0.0,
             paused: false,
             speed: 1.0,
+            owed: 0.0,
             rng: Rng::new(seed.wrapping_mul(31)),
             bus_free_at: 0.0,
             busy: VecDeque::new(),
