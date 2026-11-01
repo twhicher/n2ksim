@@ -15,6 +15,11 @@
   --sans: "Avenir Next", "Helvetica Neue", Arial, sans-serif;
   --din: "DIN Alternate", "DIN Condensed", "Avenir Next Condensed", "Arial Narrow", sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* Function colours: used as swatches and lights, never for text. */
+  --blue: #2f5be0;
+  --green: #1f9d55;
+  --yellow: #f5c400;
+  --orange: #ff5a1f;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--paper); color: var(--ink); font: 14px/1.45 var(--sans); }
@@ -41,18 +46,24 @@ a { color: var(--ink); }
 .seg button.on { background: var(--ink); color: var(--paper); }
 #meter { display: block; }
 #meter .needle { transition: transform .4s ease-out; transform-origin: 40px 38px; }
-.btn { background: var(--paper); border: 1px solid var(--ink); border-radius: 2px; padding: 4px 11px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn { background: var(--paper); border: 1px solid var(--ink); border-bottom-width: 2.5px; border-radius: 5px; padding: 4px 11px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
 .btn:hover { background: var(--ink); color: var(--paper); }
-.btn.solid { background: var(--ink); color: var(--paper); }
-.btn.solid:hover { background: var(--paper); color: var(--ink); }
+.btn:active { transform: translateY(1px); border-bottom-width: 1.5px; }
+.btn.solid { background: var(--orange); color: var(--ink); }
+.btn.solid:hover { background: var(--ink); color: var(--orange); }
 .btn.small { padding: 2px 8px; font-size: 13px; }
 .dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--ink); display: inline-block; flex: none; }
-.dot.on { background: var(--ink); }
-.dot.alarm { background: repeating-linear-gradient(45deg, var(--ink) 0 2px, var(--paper) 2px 4px); }
+.dot.on { background: var(--green); }
+.dot.alarm { background: var(--orange); }
+.sw { display: inline-block; width: 9px; height: 9px; border: 1px solid var(--ink); margin-right: 5px; vertical-align: -1px; flex: none; }
+.sw.motion { background: var(--blue); } .sw.air { background: var(--green); } .sw.nav { background: var(--yellow); } .sw.helm { background: var(--ink); } .sw.mgmt { background: var(--paper); }
+.ico { width: 15px; height: 15px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 
-nav.tabs { display: flex; gap: 0; padding: 0 16px; border-bottom: 1px solid var(--ink); }
-nav.tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 9px 14px 7px; cursor: pointer; color: var(--ink2); }
-nav.tabs button.on { color: var(--ink); border-bottom-color: var(--ink); }
+nav.tabs { display: flex; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--ink); flex-wrap: wrap; }
+nav.tabs button { display: inline-flex; align-items: center; gap: 8px; background: var(--paper); border: 1px solid var(--ink); border-bottom-width: 3px; border-radius: 6px; padding: 5px 11px 4px; cursor: pointer; color: var(--ink); }
+nav.tabs button:active { transform: translateY(1.5px); border-bottom-width: 1.5px; }
+nav.tabs button.on { background: var(--ink); color: var(--paper); }
+nav.tabs .kbd { font-family: var(--din); font-size: 11px; line-height: 1; border: 1px solid currentColor; border-radius: 3px; padding: 2px 4px 1px; opacity: .7; }
 #offline { display: none; background: var(--ink); color: var(--paper); padding: 6px 16px; }
 main { overflow: auto; min-height: 0; }
 .view { display: none; padding: 16px 20px 40px; max-width: 1500px; }
@@ -91,13 +102,11 @@ tr.sel td .muted { color: var(--rule); }
 #sheet-svg .dev { cursor: grab; }
 #sheet-svg .dev:active { cursor: grabbing; }
 #sheet-svg .term { cursor: pointer; }
-#sheet-svg .pulse { animation: flow var(--dur, 2s) linear infinite; }
-@keyframes flow { to { stroke-dashoffset: -28; } }
-@media (prefers-reduced-motion: reduce) { #sheet-svg .pulse { animation: none; } #meter .needle { transition: none; } }
+@media (prefers-reduced-motion: reduce) { #meter .needle { transition: none; } }
 
 /* Test drawer */
 #testtab { position: fixed; right: 0; top: 46%; transform: translateY(-50%); writing-mode: vertical-rl; background: var(--ink); color: var(--paper); border: 0; padding: 14px 7px; cursor: pointer; font-family: var(--din); font-size: 16px; letter-spacing: .04em; z-index: 6; display: flex; align-items: center; gap: 8px; }
-#testtab .count { writing-mode: horizontal-tb; background: var(--paper); color: var(--ink); min-width: 20px; padding: 1px 4px; text-align: center; font-size: 13px; }
+#testtab .count { writing-mode: horizontal-tb; background: var(--orange); color: var(--ink); min-width: 20px; padding: 1px 4px; text-align: center; font-size: 13px; }
 #testtab .count:empty { display: none; }
 #test { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 100vw); background: var(--paper); border-left: 2px solid var(--ink); transform: translateX(100%); transition: transform .22s ease-out; z-index: 7; display: grid; grid-template-rows: auto 1fr; box-shadow: -8px 0 0 rgba(0,0,0,.06); }
 #test.open { transform: none; }
@@ -107,8 +116,8 @@ tr.sel td .muted { color: var(--rule); }
 #test .inner { overflow: auto; padding: 4px 0 30px; }
 .find { border-bottom: 1px solid var(--rule); padding: 9px 14px; cursor: pointer; display: grid; grid-template-columns: 16px 1fr auto; gap: 8px; align-items: start; }
 .find .mark { width: 12px; height: 12px; border: 1.5px solid var(--ink); margin-top: 4px; }
-.find.error .mark { background: var(--ink); }
-.find.warn .mark { background: repeating-linear-gradient(45deg, var(--ink) 0 2px, var(--paper) 2px 4px); }
+.find.error .mark { background: var(--orange); }
+.find.warn .mark { background: var(--yellow); }
 .find.info .mark { border-radius: 50%; }
 .find .d { display: none; grid-column: 2 / 4; color: var(--ink2); font-size: 13px; }
 .find.open .d { display: block; }
@@ -122,7 +131,9 @@ tr.sel td .muted { color: var(--rule); }
 
 /* Instruments */
 .faces { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
-.face { border: 1.5px solid var(--ink); padding: 10px 12px 9px; position: relative; min-height: 132px; display: flex; flex-direction: column; }
+.face { border: 1.5px solid var(--ink); border-radius: 6px; padding: 12px 12px 9px; position: relative; min-height: 132px; display: flex; flex-direction: column; }
+.face::before { content: ""; position: absolute; left: 12px; top: -1.5px; width: 34px; height: 5px; background: var(--cat, var(--ink)); border: 1px solid var(--ink); border-top: 0; }
+.face .k .ico { margin-right: 6px; vertical-align: -3px; }
 .face .k { display: flex; justify-content: space-between; gap: 6px; align-items: baseline; font-weight: 600; font-size: 13px; }
 .face .k span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .face .k select { border: 0; background: transparent; font-size: 11px; color: var(--ink2); width: 62px; flex: none; text-align: right; }
@@ -132,9 +143,9 @@ tr.sel td .muted { color: var(--rule); }
 .face .s span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .face.big { grid-row: span 2; }
 .face.stale .v { text-decoration: line-through; color: var(--ink2); }
-.face.stale::after { content: "stale"; position: absolute; top: 8px; right: 10px; background: var(--ink); color: var(--paper); font-size: 11px; padding: 0 5px; }
-.face svg { display: block; margin: 6px auto 0; }
-.diff { font-weight: 700; text-decoration: underline; }
+.face.stale::after { content: "stale"; position: absolute; top: 8px; right: 10px; background: var(--orange); color: var(--ink); font-size: 11px; padding: 0 5px; }
+.face .body svg { display: block; margin: 6px auto 0; }
+.diff { font-weight: 700; background: var(--orange); color: var(--ink); padding: 0 4px; }
 
 /* Traffic */
 .log td { padding: 2px 6px; white-space: nowrap; border-bottom: 1px solid var(--wash); font-family: var(--mono); font-size: 12px; }
@@ -149,7 +160,11 @@ pre.help { font-family: var(--mono); font-size: 12px; border: 1px solid var(--in
 code { font-family: var(--mono); font-size: 12px; background: var(--wash); padding: 0 3px; }
 
 #toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 8px 14px; display: none; z-index: 10; max-width: 90vw; }
-#toast.err { background: var(--paper); color: var(--ink); border: 2px solid var(--ink); }
+#toast.err { background: var(--orange); color: var(--ink); border: 2px solid var(--ink); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; border: 1px solid var(--ink); border-bottom-width: 2px; border-radius: 12px; padding: 1px 9px; background: var(--paper); cursor: pointer; font-size: 12px; }
+.chip.off { opacity: .35; }
+.pulses { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
 
 @media (max-width: 760px) {
   .view { padding: 12px; }
@@ -178,11 +193,11 @@ code { font-family: var(--mono); font-size: 12px; background: var(--wash); paddi
       <div class="end"><button class="btn" id="savebtn" title="Save the network and conditions to the config file">Save</button></div>
     </header>
   </div>
-  <nav class="tabs" id="tabs">
-    <button data-tab="network" class="on">Network</button>
-    <button data-tab="instruments" title="Decoded from frames on the bus, as a display would show it">Instruments</button>
-    <button data-tab="traffic">Traffic</button>
-    <button data-tab="sailing">Sailing</button>
+  <nav class="tabs" id="tabs" aria-label="Views">
+    <button data-tab="network" class="on"><svg class="ico" viewBox="0 0 16 16"><path d="M1 6h14M4 6v6M8 6v6M12 6v6"/><rect x="2.5" y="12" width="3" height="2.5"/><rect x="10.5" y="12" width="3" height="2.5"/></svg>Network<span class="kbd">1</span></button>
+    <button data-tab="instruments" title="Decoded from frames on the bus, as a display would show it"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5"/><path d="M8 8l3-3"/><circle cx="8" cy="8" r="1" fill="currentColor"/></svg>Instruments<span class="kbd">2</span></button>
+    <button data-tab="traffic"><svg class="ico" viewBox="0 0 16 16"><path d="M1 9h2l1.5-5 2.5 9 2-7 1.5 3H15"/></svg>Traffic<span class="kbd">3</span></button>
+    <button data-tab="sailing"><svg class="ico" viewBox="0 0 16 16"><path d="M7 1.5v11.5M7 2l6 10H7M7 4L3 12h4M2 14.5h12"/></svg>Sailing<span class="kbd">4</span></button>
   </nav>
   <main>
     <div class="view on" id="v-network"></div>
@@ -191,7 +206,7 @@ code { font-family: var(--mono); font-size: 12px; background: var(--wash); paddi
     <div class="view" id="v-sailing"></div>
   </main>
 </div>
-<button id="testtab" aria-controls="test" aria-expanded="false">Test <span class="count" id="testcount"></span></button>
+<button id="testtab" aria-controls="test" aria-expanded="false" title="Test (T)">Test <span class="count" id="testcount"></span></button>
 <aside id="test" aria-label="Test">
   <header><b>Test</b><button class="btn small" id="testclose">Close</button></header>
   <div class="inner">
@@ -220,6 +235,40 @@ let S = null, META = { kinds: [], drills: [], presets: [], pgn_defs: [], library
 const UI = { tab: "network", device: null, sources: {}, logMode: "msgs", logPaused: false, filter: "", errorsOnly: false, pgnSel: null, openChecks: new Set(), track: [], truthTrack: [], depthHist: [], active: new Map() };
 const FRAMES = [], MSGS = [];
 const PGN_NAMES = {};
+const RM = matchMedia("(prefers-reduced-motion: reduce)");
+
+/* Each PGN belongs to one function, and each function has one colour. */
+const CATS = [
+  ["motion", "Heading and motion", "#2f5be0"],
+  ["air", "Wind, air and sea", "#1f9d55"],
+  ["nav", "Position, speed and depth", "#f5c400"],
+  ["helm", "Steering and power", "#000000"],
+  ["mgmt", "Network management", "#ffffff"],
+];
+const CATCOL = Object.fromEntries(CATS.map(c => [c[0], c[2]]));
+function pgnCat(p) {
+  if ([127250, 127251, 127252, 127257, 127258].includes(p)) return "motion";
+  if (p === 130306 || (p >= 130310 && p <= 130316) || p === 130323) return "air";
+  if ([126992, 128000, 128259, 128267, 128275, 129025, 129026, 129029, 129033, 129283, 129284, 129291, 129539, 129540, 130577, 130578].includes(p)) return "nav";
+  if ([127245, 127237, 127501, 127505, 127506, 127508, 127513, 127751].includes(p)) return "helm";
+  return "mgmt";
+}
+const sw = p => `<span class="sw ${pgnCat(p)}" aria-hidden="true"></span>`;
+const ICONS = {
+  heading: '<circle cx="8" cy="8" r="6.5"/><path d="M8 3.5l1.6 4.5H6.4z" fill="currentColor"/>',
+  wind: '<path d="M1.5 5h8a2 2 0 1 0-2-2M1.5 8.5h11a2 2 0 1 1-2 2M1.5 12h6"/>',
+  speed: '<path d="M2 11a6 6 0 0 1 12 0"/><path d="M8 11l3-4"/>',
+  sog: '<path d="M2 13L13 3M8 3h5v5"/><path d="M1.5 14.5h13" stroke-dasharray="1.5 1.5"/>',
+  depth: '<path d="M1 4c1.5-1.5 3-1.5 4.5 0s3 1.5 4.5 0 3-1.5 4.5 0"/><path d="M8 7v7M5.5 11.5L8 14l2.5-2.5"/>',
+  rudder: '<path d="M8 1.5v5"/><path d="M6 6.5h4l-.5 8h-3z"/>',
+  heel: '<path d="M2 13h12"/><path d="M4 10l9-4 0 4z"/><path d="M8.5 8V2"/>',
+  rot: '<path d="M13 8a5 5 0 1 1-2-4"/><path d="M11 1.5V4.5H14"/>',
+  pos: '<circle cx="8" cy="8" r="4.5"/><path d="M8 1v3.5M8 11.5V15M1 8h3.5M11.5 8H15"/>',
+  temp: '<path d="M6.5 2.5a1.5 1.5 0 0 1 3 0v7a3 3 0 1 1-3 0z"/>',
+  battery: '<rect x="1.5" y="4.5" width="12" height="7" rx="1"/><path d="M15 7v2M4 8h3M5.5 6.5v3"/>',
+  log: '<rect x="1.5" y="4.5" width="13" height="7"/><path d="M5 4.5v7M8 4.5v7M11 4.5v7"/>',
+};
+const icon = k => `<svg class="ico" viewBox="0 0 16 16" aria-hidden="true">${ICONS[k] || ""}</svg>`;
 
 function toast(msg, ok) {
   const t = $("#toast"); t.textContent = msg; t.className = ok ? "" : "err"; t.style.display = "block";
@@ -274,6 +323,7 @@ function connect() {
     if (d.frames_skipped || d.msgs_skipped) UI.skipped = (UI.skipped || 0) + d.frames_skipped + d.msgs_skipped;
     collect();
     render();
+    spawnPulses(d.frames || []);
   };
 }
 function decodeId(id) {
@@ -383,7 +433,7 @@ function buildMeter() {
   const arc = (f0, f1, rr) => { const a0 = Math.PI * (1 - f0), a1 = Math.PI * (1 - f1); return `M${cx + Math.cos(a0) * rr} ${cy - Math.sin(a0) * rr} A${rr} ${rr} 0 0 1 ${cx + Math.cos(a1) * rr} ${cy - Math.sin(a1) * rr}`; };
   $("#meter").innerHTML = `<rect x="1" y="1" width="78" height="42" rx="3" fill="#fff" stroke="#000"/>
     <path d="${arc(0, 1, r)}" fill="none" stroke="#000"/>
-    <path d="${arc(0.4, 1, r - 2)}" fill="none" stroke="#000" stroke-width="4" stroke-dasharray="1 1.5"/>
+    <path d="${arc(0.4, 1, r - 3)}" fill="none" stroke="#ff5a1f" stroke-width="5"/>
     ${ticks}
     <g class="needle"><line x1="${cx}" y1="${cy}" x2="${cx - r + 3}" y2="${cy}" stroke="#000" stroke-width="1.4"/></g>
     <circle cx="${cx}" cy="${cy}" r="3" fill="#000"/>`;
@@ -470,7 +520,7 @@ const MAX_W = 240, MAX_H = 170;
    of the bottom edge (above the bus) or the top edge (below). */
 function drawForm(look, W, H, live, d) {
   const k = `stroke="#000" stroke-width="1.3" fill="#fff"`;
-  const led = (x, y) => `<circle cx="${x}" cy="${y}" r="2.6" ${live.on ? 'fill="#000" stroke="#000"' : k}/>`;
+  const led = (x, y) => `<circle cx="${x}" cy="${y}" r="2.8" stroke="#000" stroke-width="1" fill="${live.on ? (live.col || "#000") : "#fff"}"/>`;
   const brk = (x, y, w) => `<path d="M${x} ${y} l${w * .3} -4 l${w * .4} 8 l${w * .3} -4" fill="none" stroke="#000" stroke-width="1"/>`;
   switch (look.form) {
     case "display": {
@@ -612,7 +662,7 @@ function buildNetwork() {
       <h2><span id="sheettitle">Network</span><span class="grow"></span>
         <select id="netpreset" class="btn small" aria-label="Network to load"></select><button class="btn small" id="netbtn">Load</button>
         <select id="addkind" class="btn small" aria-label="Device to add"></select><button class="btn small solid" id="addbtn">Add</button></h2>
-      <div class="paper"><svg id="sheet-svg" role="img" aria-label="Network schematic"></svg></div>
+      <div class="paper" style="position:relative"><svg id="sheet-svg" role="img" aria-label="Network schematic"></svg><svg id="pulse-svg" class="pulses" aria-hidden="true"></svg></div>
       <div class="body row" style="border-top:1px solid #000">
         <label class="f">Backbone m<input type="number" step="0.5" min="1" data-bb="length_m"></label>
         <label class="f">Cable<select data-bb="cable"><option value="micro">Micro</option><option value="mid">Mid</option><option value="heavy">Heavy</option></select></label>
@@ -775,7 +825,6 @@ function renderSchematic() {
   h += `<line x1="${x0}" y1="${busY}" x2="${x1}" y2="${busY}" stroke="#000" stroke-width="${cableW}"/>
         <line x1="${x0}" y1="${busY}" x2="${x1}" y2="${busY}" stroke="#fff" stroke-width="${cableW - 3}"/>`;
   if (!bb.powered) h += `<line x1="${x0}" y1="${busY}" x2="${x1}" y2="${busY}" stroke="url(#hatch)" stroke-width="${cableW - 3}"/>`;
-  h += pulseLine(x0, x1, busY, bb.powered);
   for (const it of all) h += `<rect x="${it.tx - 5}" y="${busY - cableW / 2 - 3}" width="10" height="${cableW + 6}" fill="#fff" stroke="#000" stroke-width="1.3"/>`;
   if (drag && drag.moved) {
     for (const sl of freeSlots(drag.id)) {
@@ -804,7 +853,8 @@ function renderSchematic() {
       continue;
     }
     const d = it.d, c = d.cfg;
-    const live = { on: c.enabled && S.t - (UI.active.get(d.address) ?? -9) < 0.3 };
+    const first = c.pgns.find(p => p.enabled);
+    const live = { on: c.enabled && S.t - (UI.active.get(d.address) ?? -9) < 0.3, col: first ? CATCOL[pgnCat(first.pgn)] : "#000" };
     if (it.look.form === "display") {
       const idx = S.devices.filter(x => lookOf(x).form === "display").indexOf(d);
       const [lab, fn] = DISPLAY_SHOWS[idx % DISPLAY_SHOWS.length];
@@ -823,7 +873,7 @@ function renderSchematic() {
     let plate = lines.map((ln, i) => `<text x="${cx}" y="${py + i * 13}" font-size="12" font-weight="600" text-anchor="middle">${esc(ln)}</text>`).join("");
     const y2 = py + lines.length * 13;
     plate += `<text x="${cx}" y="${y2}" font-size="11" text-anchor="middle" class="din">${esc(addr)}<tspan dx="8">${fix(d.voltage, 1)} V</tspan>${reading ? `<tspan dx="8">${esc(reading)}</tspan>` : ""}</text>`;
-    if (state) plate += `<rect x="${cx - state.length * 3.3 - 5}" y="${y2 + 4}" width="${state.length * 6.6 + 10}" height="14" fill="#000"/><text x="${cx}" y="${y2 + 15}" font-size="11" text-anchor="middle" style="fill:#fff">${esc(state)}</text>`;
+    if (state) plate += `<rect x="${cx - state.length * 3.3 - 5}" y="${y2 + 4}" width="${state.length * 6.6 + 10}" height="14" rx="2" fill="${state === "claiming" || state === "unplugged" && !c.enabled ? "#fff" : "#ff5a1f"}" stroke="#000"/><text x="${cx}" y="${y2 + 15}" font-size="11" text-anchor="middle">${esc(state)}</text>`;
     const sel = UI.device === c.id;
     h += `<g data-id="${esc(c.id)}" class="dev" tabindex="0" role="button" aria-label="${esc(c.label)}, address ${esc(addr)}${state ? ", " + esc(state) : ""}" opacity="${c.enabled ? 1 : .4}">
       <title>${esc(c.label)}${it.look.sourced ? "" : ". Generic shape, illustrative size"}${faults ? ". Has fault settings" : ""}. Drag to move its tee.</title>
@@ -856,16 +906,62 @@ function renderSchematic() {
     <text x="${tbX + cw * 4 - 8}" y="${tbY + 42}" font-size="8" text-anchor="end" style="fill:#767676">100 mm</text>`;
   svg.innerHTML = h;
   $("#sheettitle").textContent = S.network_name || "Network";
+  const ov = $("#pulse-svg");
+  ov.setAttribute("width", W); ov.setAttribute("height", H); ov.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const tx = new Map();
+  for (const it of all) if (it.d && it.d.cfg.enabled) tx.set(it.d.address, it.tx);
+  const gw = all.find(it => it.d && it.d.cfg.kind === "gateway");
+  GEO = { x0, x1, busY, tx, gw: gw ? gw.tx : x0, powered: bb.powered };
 }
-/* Data pulses along the cable. The dash pattern's phase comes from the
-   clock, so re-rendering does not make the motion jump. */
-function pulseLine(x0, x1, y, powered) {
-  if (!powered) return "";
-  const lh = S.history[S.history.length - 1], fps = lh ? lh[2] : 0;
-  if (fps < 1) return "";
-  const dur = Math.max(0.35, Math.min(3, 60 / fps));
-  const delay = -((performance.now() / 1000) % dur);
-  return `<line class="pulse" x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="#000" stroke-width="2" stroke-dasharray="3 25" style="--dur:${dur}s;animation-delay:${delay}s"/>`;
+
+/* A calm picture of who is talking: each device sends at most one pulse
+   every 1.2 s, in the colour of the data it mostly sends, drifting a short
+   way along the cable and fading. Error frames flash orange at their
+   source, at most one flash every 0.6 s. */
+let GEO = null;
+const PULSE_EVERY = 1200, PULSE_PX = 140, PULSE_MS = 1600, ERROR_EVERY = 600;
+const lastPulse = new Map();
+let lastError = 0;
+function spawnPulses(frames) {
+  if (RM.matches || UI.tab !== "network" || !GEO || !GEO.powered || drag || !frames.length) return;
+  const ov = $("#pulse-svg"); if (!ov) return;
+  const ns = "http://www.w3.org/2000/svg", now = performance.now();
+  const bySrc = new Map();
+  let errorAt = null;
+  for (const f of frames) {
+    const c = decodeId(parseInt(f[2], 16));
+    const x = (f[4] & 2) ? GEO.gw : GEO.tx.get(c.src) ?? GEO.x0;
+    if (f[4] & 1) { errorAt = x; continue; }
+    const cat = pgnCat(c.pgn);
+    if (cat === "mgmt") continue;
+    const e = bySrc.get(c.src) || { x, counts: {} };
+    e.counts[cat] = (e.counts[cat] || 0) + 1;
+    bySrc.set(c.src, e);
+  }
+  if (errorAt != null && now - lastError >= ERROR_EVERY) {
+    lastError = now;
+    const el = document.createElementNS(ns, "rect");
+    el.setAttribute("x", errorAt - 5); el.setAttribute("y", GEO.busY - 5); el.setAttribute("width", 10); el.setAttribute("height", 10);
+    el.setAttribute("fill", "#ff5a1f"); el.setAttribute("stroke", "#000");
+    el.style.transformBox = "fill-box"; el.style.transformOrigin = "center";
+    ov.appendChild(el);
+    el.animate([{ transform: "scale(.6) rotate(0deg)", opacity: 1 }, { transform: "scale(2) rotate(45deg)", opacity: 0 }], { duration: 900, easing: "ease-out", fill: "both" }).onfinish = () => el.remove();
+  }
+  for (const [src, e] of bySrc) {
+    if (now - (lastPulse.get(src) ?? -1e9) < PULSE_EVERY) continue;
+    lastPulse.set(src, now);
+    const cat = Object.entries(e.counts).sort((a, b) => b[1] - a[1])[0][0];
+    for (const end of [GEO.x0, GEO.x1]) {
+      const room = end - e.x;
+      if (Math.abs(room) < 6) continue;
+      const dist = Math.sign(room) * Math.min(Math.abs(room), PULSE_PX);
+      const el = document.createElementNS(ns, "circle");
+      el.setAttribute("cx", e.x); el.setAttribute("cy", GEO.busY); el.setAttribute("r", 3);
+      el.setAttribute("fill", CATCOL[cat]); el.setAttribute("stroke", "#000"); el.setAttribute("stroke-width", .8);
+      ov.appendChild(el);
+      el.animate([{ transform: "translateX(0)", opacity: 1 }, { transform: `translateX(${dist}px)`, opacity: 0 }], { duration: PULSE_MS, easing: "cubic-bezier(.2,.6,.3,1)", fill: "both" }).onfinish = () => el.remove();
+    }
+  }
 }
 
 function renderBackboneForm() { $$("[data-bb]").forEach(inp => syncInput(inp, S.backbone[inp.dataset.bb])); }
@@ -978,7 +1074,7 @@ function renderInspector() {
     pt.dataset.sig = sig;
     pt.innerHTML = `<tr><th>Sends</th><th>PGN</th><th class="n">Every ms</th><th class="n">Measured</th></tr>` + (c.pgns.length ? c.pgns.map((p, i) => `<tr>
       <td><input type="checkbox" data-pi="${i}" data-k="enabled" aria-label="Send ${p.pgn}"></td>
-      <td>${p.pgn} <span class="muted">${esc(pgnName(p.pgn))}</span>${META.variants[p.pgn] ? ` <select data-pi="${i}" data-k="variant" class="field" style="width:auto;font-size:12px" aria-label="Variant">${META.variants[p.pgn].map(v => `<option value="${esc(v)}">${esc(v.replace("_", " "))}</option>`).join("")}</select>` : ""}</td>
+      <td>${sw(p.pgn)}${p.pgn} <span class="muted">${esc(pgnName(p.pgn))}</span>${META.variants[p.pgn] ? ` <select data-pi="${i}" data-k="variant" class="field" style="width:auto;font-size:12px" aria-label="Variant">${META.variants[p.pgn].map(v => `<option value="${esc(v)}">${esc(v.replace("_", " "))}</option>`).join("")}</select>` : ""}</td>
       <td class="n"><input type="number" min="10" step="10" class="field" style="width:70px;text-align:right" data-pi="${i}" data-k="interval_ms" aria-label="Interval"></td>
       <td class="n" data-hz="${p.pgn}"></td></tr>`).join("") : `<tr><td colspan="4" class="muted">Network management only.</td></tr>`);
     $$("[data-pi]", pt).forEach(inp => inp.onchange = () => {
@@ -1007,7 +1103,7 @@ function renderBusTable() {
       <td class="n">${s.src}</td><td>${esc(s.product?.model || (s.src === 252 ? "This page's console" : ""))}${s.product ? `<div class="muted">${esc(s.product.software)}, ${esc(s.product.serial)}</div>` : ""}</td>
       <td class="mono">${n ? esc(n.hex) : `<span class="muted">no claim seen</span>`}${n && !n.arbitrary_address_capable ? " fixed" : ""}</td>
       <td class="n">${n ? n.device_class + ", " + n.device_function : ""}</td>
-      <td style="max-width:280px">${sends.join(", ")}</td>
+      <td style="max-width:300px">${sends.map(p => `<span style="white-space:nowrap">${sw(p)}${p}</span>`).join(" ")}</td>
       <td class="n">${s.frames}</td>
       <td class="n ${s.periodic && s.age > 5 ? "diff" : ""}">${fix(s.age, 1)} s</td></tr>`;
   }).join("");
@@ -1033,22 +1129,22 @@ function renderLibrary() {
 
 /* ---------- instruments ---------- */
 const TILES = [
-  { key: "heading", title: "Heading", pgn: 127250, big: true },
-  { key: "wind", title: "Wind", pgn: 130306, f: v => v.reference === 2, big: true },
-  { key: "stw", title: "Boat speed", pgn: 128259, f: v => v.speedWaterReferenced != null },
-  { key: "cogsog", title: "Speed over ground", pgn: 129026 },
-  { key: "depth", title: "Depth", pgn: 128267 },
-  { key: "rudder", title: "Rudder", pgn: 127245, f: v => v.position != null },
-  { key: "attitude", title: "Heel", pgn: 127257 },
-  { key: "rot", title: "Rate of turn", pgn: 127251 },
-  { key: "pos", title: "Position", pgn: 129025 },
-  { key: "temp", title: "Sea temperature", pgn: 130312, f: v => v.source === 0 },
-  { key: "battery", title: "Battery", pgn: 127508 },
-  { key: "log", title: "Log", pgn: 128275 },
+  { key: "heading", title: "Heading", pgn: 127250, big: true, ico: "heading" },
+  { key: "wind", title: "Wind", pgn: 130306, f: v => v.reference === 2, big: true, ico: "wind" },
+  { key: "stw", title: "Boat speed", pgn: 128259, f: v => v.speedWaterReferenced != null, ico: "speed" },
+  { key: "cogsog", title: "Speed over ground", pgn: 129026, ico: "sog" },
+  { key: "depth", title: "Depth", pgn: 128267, ico: "depth" },
+  { key: "rudder", title: "Rudder", pgn: 127245, f: v => v.position != null, ico: "rudder" },
+  { key: "attitude", title: "Heel", pgn: 127257, ico: "heel" },
+  { key: "rot", title: "Rate of turn", pgn: 127251, ico: "rot" },
+  { key: "pos", title: "Position", pgn: 129025, ico: "pos" },
+  { key: "temp", title: "Sea temperature", pgn: 130312, f: v => v.source === 0, ico: "temp" },
+  { key: "battery", title: "Battery", pgn: 127508, ico: "battery" },
+  { key: "log", title: "Log", pgn: 128275, ico: "log" },
 ];
 function buildInstruments() {
   $("#v-instruments").innerHTML = `
-    <div class="faces">${TILES.map(t => `<div class="face ${t.big ? "big" : ""}" id="tile-${t.key}"><div class="k"><span>${t.title}</span><select data-src="${t.key}" aria-label="${t.title} source"></select></div><div class="body"></div><div class="s"><span class="age"></span><span class="extra"></span></div></div>`).join("")}</div>
+    <div class="faces">${TILES.map(t => `<div class="face ${t.big ? "big" : ""}" id="tile-${t.key}" style="--cat:${CATCOL[pgnCat(t.pgn)]}"><div class="k"><span>${icon(t.ico)}${t.title}</span><select data-src="${t.key}" aria-label="${t.title} source"></select></div><div class="body"></div><div class="s"><span class="age"></span><span class="extra"></span></div></div>`).join("")}</div>
     <div class="cols" style="margin-top:18px">
       <section class="sheet"><h2>Track<span class="grow"></span><label class="c" style="font-weight:400;font-size:13px"><input type="checkbox" id="showtruth" checked> True track, dashed</label></h2><svg id="track" height="320" style="width:100%;display:block"></svg></section>
       <section class="sheet"><h2>Bus against truth</h2><table id="vs"></table></section>
@@ -1172,7 +1268,7 @@ function renderVs() {
   ];
   $("#vs").innerHTML = `<tr><th></th><th class="n">Bus</th><th class="n">Truth</th><th class="n">Difference</th></tr>` + rows.map(([l, b, tr, u, d, ang, tol]) => {
     const diff = b == null ? null : ang ? wrap180(b - tr) : b - tr;
-    return `<tr><td>${l}</td><td class="n">${b == null ? "–" : fix(b, d) + " " + u}</td><td class="n">${fix(tr, d)} ${u}</td><td class="n ${diff != null && Math.abs(diff) > tol ? "diff" : "muted"}">${diff == null ? "" : (diff > 0 ? "+" : "") + fix(diff, d)}</td></tr>`;
+    return `<tr><td>${l}</td><td class="n">${b == null ? "–" : fix(b, d) + " " + u}</td><td class="n">${fix(tr, d)} ${u}</td><td class="n ${diff != null && Math.abs(diff) > tol ? "diff" : "muted"}">${diff == null ? "" : (() => { const t = fix(diff, d); return /^-0(\.0*)?$/.test(t) ? t.slice(1) : (diff > 0 && +t !== 0 ? "+" : "") + t; })()}</td></tr>`;
   }).join("");
 }
 
@@ -1190,6 +1286,7 @@ function buildTraffic() {
       <section class="sheet"><h2>Live log<span class="grow"></span>
         <span class="seg" id="logmode"><button data-m="msgs" class="on">Messages</button><button data-m="frames">Frames</button></span>
         <button class="btn small" id="logpause">Pause</button></h2>
+        <div class="body chips" id="catchips" style="padding-bottom:0"></div>
         <div class="body row" style="padding-bottom:0">
           <input id="logfilter" class="field" placeholder="Filter by PGN, src:5, or text" style="flex:1;min-width:200px;font-family:var(--sans);font-size:14px" aria-label="Filter the log">
           <label class="c"><input type="checkbox" id="logerr"> Error frames only</label>
@@ -1232,6 +1329,14 @@ function buildTraffic() {
           <button class="btn" id="replaystop">Stop</button>
         </div></div></section>
     </div>`;
+  UI.cats = new Set(CATS.map(c => c[0]));
+  $("#catchips").innerHTML = CATS.map(([k, label]) => `<button class="chip" data-cat="${k}" aria-pressed="true"><span class="sw ${k}"></span>${label}</button>`).join("");
+  $$("#catchips .chip").forEach(b => b.onclick = () => {
+    const k = b.dataset.cat;
+    UI.cats.has(k) ? UI.cats.delete(k) : UI.cats.add(k);
+    b.classList.toggle("off", !UI.cats.has(k)); b.setAttribute("aria-pressed", UI.cats.has(k));
+    renderLog(true); renderTraffic();
+  });
   $$("#logmode button").forEach(b => b.onclick = () => { UI.logMode = b.dataset.m; $$("#logmode button").forEach(x => x.classList.toggle("on", x === b)); renderLog(true); });
   $("#logpause").onclick = () => { UI.logPaused = !UI.logPaused; $("#logpause").textContent = UI.logPaused ? "Resume" : "Pause"; };
   $("#logfilter").oninput = e => { UI.filter = e.target.value.trim().toLowerCase(); renderLog(true); };
@@ -1270,10 +1375,10 @@ function renderTraffic() {
   $("#loadnow").textContent = (S.bus.load * 100).toFixed(1) + "%";
   $("#fpsnow").textContent = lh ? `${fix(lh[2], 0)} frames, ${fix(lh[3], 1)} errors dashed` : "";
   $("#capcount").textContent = S.bus.capture_frames.toLocaleString();
-  const rows = S.pgns.slice().sort((a, b) => a.pgn - b.pgn || a.src - b.src);
+  const rows = S.pgns.filter(p => !UI.cats || UI.cats.has(pgnCat(p.pgn))).sort((a, b) => a.pgn - b.pgn || a.src - b.src);
   $("#pgntable").innerHTML = `<tr><th class="n">PGN</th><th>Name</th><th class="n">Source</th><th class="n">Hz</th><th class="n">Usual</th><th class="n">Count</th><th class="n">Age s</th></tr>` + rows.map(p => {
     const k = p.pgn + ":" + p.src, slow = p.expected_hz && p.hz < p.expected_hz * 0.5 && p.age < 5;
-    return `<tr class="click ${UI.pgnSel === k ? "sel" : ""}" data-k="${k}"><td class="n">${p.pgn}</td><td class="clip" style="width:40%">${esc(p.name)}${p.fast ? ", fast packet" : ""}</td><td class="n">${p.src}</td><td class="n ${slow ? "diff" : ""}">${fix(p.hz, 1)}</td><td class="n muted">${p.expected_hz ? fix(p.expected_hz, 1) : "–"}</td><td class="n">${p.count}</td><td class="n ${p.expected_hz && p.age > 3 ? "diff" : ""}">${fix(p.age, 1)}</td></tr>`;
+    return `<tr class="click ${UI.pgnSel === k ? "sel" : ""}" data-k="${k}"><td class="n">${sw(p.pgn)}${p.pgn}</td><td class="clip" style="width:40%">${esc(p.name)}${p.fast ? ", fast packet" : ""}</td><td class="n">${p.src}</td><td class="n ${slow ? "diff" : ""}">${fix(p.hz, 1)}</td><td class="n muted">${p.expected_hz ? fix(p.expected_hz, 1) : "–"}</td><td class="n">${p.count}</td><td class="n ${p.expected_hz && p.age > 3 ? "diff" : ""}">${fix(p.age, 1)}</td></tr>`;
   }).join("");
   $$("#pgntable tr[data-k]").forEach(tr => tr.onclick = () => { UI.pgnSel = tr.dataset.k; renderTraffic(); });
   const s = UI.pgnSel && S.pgns.find(p => p.pgn + ":" + p.src === UI.pgnSel);
@@ -1288,16 +1393,18 @@ function renderLog(force) {
       const [, t, id, data, flags] = FRAMES[i];
       if (UI.errorsOnly && !(flags & 1)) continue;
       const c = decodeId(parseInt(id, 16));
+      if (UI.cats && !UI.cats.has(pgnCat(c.pgn))) continue;
       if (f && (srcf != null ? c.src !== srcf : !(String(c.pgn).includes(f) || id.toLowerCase().includes(f) || data.toLowerCase().includes(f) || pgnName(c.pgn).toLowerCase().includes(f)))) continue;
       const cls = flags & 2 ? "src-cli" : flags & 4 ? "src-con" : flags & 8 ? "src-rep" : "";
-      out.push(`<tr class="click ${flags & 1 ? "err" : ""}" data-f="${i}"><td class="${cls}">${fix(t, 3)}</td><td>${esc(id)}</td><td>${c.prio}</td><td>${c.pgn}</td><td>${c.src}→${c.dst === 255 ? "all" : c.dst}</td><td class="txt" style="font-family:var(--mono);font-size:12px">${esc(data)}${flags & 1 ? "  error" : ""}</td></tr>`);
+      out.push(`<tr class="click ${flags & 1 ? "err" : ""}" data-f="${i}"><td class="${cls}">${fix(t, 3)}</td><td>${esc(id)}</td><td>${c.prio}</td><td>${sw(c.pgn)}${c.pgn}</td><td>${c.src}→${c.dst === 255 ? "all" : c.dst}</td><td class="txt" style="font-family:var(--mono);font-size:12px">${esc(data)}${flags & 1 ? "  error" : ""}</td></tr>`);
     }
   } else {
     for (let i = MSGS.length - 1; i >= 0 && out.length < 300; i--) {
       const [, t, pgn, src, dst, , text] = MSGS[i];
       if (UI.errorsOnly) continue;
+      if (UI.cats && !UI.cats.has(pgnCat(pgn))) continue;
       if (f && (srcf != null ? src !== srcf : !(String(pgn).includes(f) || text.toLowerCase().includes(f) || pgnName(pgn).toLowerCase().includes(f)))) continue;
-      out.push(`<tr class="click" data-m="${i}"><td>${fix(t, 3)}</td><td>${pgn}</td><td>${src}→${dst === 255 ? "all" : dst}</td><td class="txt" title="${esc(text)}"><b>${esc(pgnName(pgn))}</b> ${esc(text)}</td></tr>`);
+      out.push(`<tr class="click" data-m="${i}"><td>${fix(t, 3)}</td><td>${sw(pgn)}${pgn}</td><td>${src}→${dst === 255 ? "all" : dst}</td><td class="txt" title="${esc(text)}"><b>${esc(pgnName(pgn))}</b> ${esc(text)}</td></tr>`);
     }
   }
   $("#log").innerHTML = (UI.logMode === "frames" ? `<tr><th>Time s</th><th>CAN id</th><th>P</th><th>PGN</th><th>From, to</th><th>Data</th></tr>` : `<tr><th>Time s</th><th>PGN</th><th>From, to</th><th>Decoded</th></tr>`) + out.join("");
@@ -1402,6 +1509,13 @@ function setTab(t) {
   render();
 }
 $$("#tabs button").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey || e.target.closest?.("input, select, textarea")) return;
+  const tabs = ["network", "instruments", "traffic", "sailing"];
+  if (e.key >= "1" && e.key <= "4") setTab(tabs[+e.key - 1]);
+  else if (e.key === "t" || e.key === "T") setTest(!$("#test").classList.contains("open"));
+  else if ((e.key === "p" || e.key === "P") && S) api("/api/control", { action: S.paused ? "resume" : "pause" });
+});
 function render() {
   if (!S || !META.kinds.length) return;
   renderHeader(); renderTest();
