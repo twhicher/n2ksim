@@ -1,10 +1,10 @@
 # Working rules
 
-What this is and how to run it: `README.md`. It serves the autopilot in `../autopilot`; follow that repo's conventions (`docs/conventions.md`): SI and radians inside, knots and degrees only where a name says so, NED world frame, heel positive starboard down, wind angle positive from starboard.
+What this is and how to run it: `README.md`. Conventions: SI and radians inside, knots and degrees only where a name says so, NED world frame, heel positive starboard down, wind angle positive from starboard, rudder positive turns the boat to starboard.
 
 ## Never break these
 
-- `n2k` has no dependencies and no simulator types. The autopilot may depend on it.
+- `n2k` has no dependencies and no simulator types; other projects use it on its own.
 - PGN layouts follow canboat's definitions. Change one only with a canboat reference, and keep the round-trip tests.
 - Everything the UI shows as "on the bus" comes from the analyser, which sees only frames. Simulator truth is labelled as truth.
 - Each health finding says its evidence: `bus`, `design` or `sim`.
