@@ -9,6 +9,10 @@ use n2k::pgn::{self, Builder};
 use n2k::{frames_for, CanId, Frame, Name};
 use std::collections::{HashMap, HashSet, VecDeque};
 
+/// Frames a node's software has not collected yet. Beyond this the oldest
+/// are lost, as in an interface whose receive buffer overruns.
+pub const NODE_RX: usize = 4096;
+
 /// PGNs a simulated device can generate from the world.
 pub const SIMULATED: &[u32] = &[
     pgn::POSITION_RAPID,
@@ -154,6 +158,11 @@ pub struct Device {
     /// The address it last claimed successfully. Real devices keep this in
     /// non-volatile memory and claim it again at power-up.
     pub stored_address: Option<u8>,
+    /// A node's received frames, with the time each ended on the wire,
+    /// waiting for its software. Unused by other kinds.
+    pub node_rx: VecDeque<(f64, Frame)>,
+    /// Received frames a node lost because its software did not collect them.
+    pub node_overruns: u64,
 }
 
 impl Device {
@@ -191,6 +200,8 @@ impl Device {
             next_flake_check: 0.0,
             pending_data: Vec::new(),
             stored_address: None,
+            node_rx: VecDeque::new(),
+            node_overruns: 0,
         };
         d.seq = (d.rng.next_u64() % 8) as u8;
         d
@@ -211,6 +222,14 @@ impl Device {
         self.asked.clear();
         self.pending.clear();
         self.stuck.clear();
+        if self.cfg.kind == DeviceKind::Node {
+            // The interface is up; the address is the software's to claim.
+            self.node_rx.clear();
+            self.address = NULL_ADDRESS;
+            self.state = DevState::Online;
+            self.next_flake_check = t + 1.0;
+            return;
+        }
         self.claim(t);
         self.due = self.cfg.pgns.iter().map(|p| t + CLAIM_WAIT_S + self.rng.range(0.0, p.interval_ms.max(1) as f64 / 1000.0)).collect();
         self.hb_due = t + CLAIM_WAIT_S + self.rng.range(0.5, 2.0);
@@ -298,7 +317,7 @@ impl Device {
                 });
             }
         }
-        if self.state != DevState::Online {
+        if self.state != DevState::Online || self.cfg.kind == DeviceKind::Node {
             return;
         }
         // Requests a display makes of devices it has just seen.
@@ -588,6 +607,14 @@ impl Device {
             return;
         }
         self.frames_rx += 1;
+        if self.cfg.kind == DeviceKind::Node {
+            if self.node_rx.len() >= NODE_RX {
+                self.node_rx.pop_front();
+                self.node_overruns += 1;
+            }
+            self.node_rx.push_back((t, *f));
+            return;
+        }
         let id = f.can_id();
         match id.pgn {
             pgn::ADDRESS_CLAIM => {

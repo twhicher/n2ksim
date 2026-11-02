@@ -31,9 +31,17 @@ pub enum DeviceKind {
     Processor,
     /// Weather station: wind, air temperature, pressure, often position too.
     Weather,
+    /// A computer on the backbone whose software runs outside n2ksim and
+    /// talks to the bus through [`crate::sim::Sim::node_send`] and
+    /// [`crate::sim::Sim::node_recv`]. n2ksim models its transceiver
+    /// (power, arbitration, errors, bus off) but no protocol: the software
+    /// claims its own address, answers requests and sends its own data.
+    /// Added by the program that drives it, so not offered on the page.
+    Node,
 }
 
 impl DeviceKind {
+    /// The kinds the page offers to add (all but [`DeviceKind::Node`]).
     pub const ALL: [DeviceKind; 10] = [
         DeviceKind::Gnss,
         DeviceKind::Compass,
@@ -59,6 +67,7 @@ impl DeviceKind {
             DeviceKind::Gateway => "gateway",
             DeviceKind::Processor => "processor",
             DeviceKind::Weather => "weather",
+            DeviceKind::Node => "node",
         }
     }
 
@@ -74,6 +83,7 @@ impl DeviceKind {
             DeviceKind::Gateway => "PC gateway",
             DeviceKind::Processor => "Instrument processor",
             DeviceKind::Weather => "Weather station",
+            DeviceKind::Node => "Software node",
         }
     }
 
@@ -91,6 +101,7 @@ impl DeviceKind {
             DeviceKind::Gateway => vec![],
             DeviceKind::Processor => vec![(WIND, 100), (SPEED, 1000), (HEADING, 100), (ATTITUDE, 100)],
             DeviceKind::Weather => vec![(WIND, 100), (ENV_PARAMETERS, 500), (PRESSURE, 2000)],
+            DeviceKind::Node => vec![],
         }
     }
 
@@ -121,6 +132,8 @@ impl DeviceKind {
             DeviceKind::Gateway => (25, 130),   // Internetwork device: PC Gateway
             DeviceKind::Processor => (60, 175), // Navigation: Integrated Navigation System
             DeviceKind::Weather => (80, 180),   // Instrumentation: Weather Instruments
+            // Only for the schematic: the software claims its own NAME.
+            DeviceKind::Node => (25, 130),
         }
     }
 

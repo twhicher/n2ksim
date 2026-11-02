@@ -506,6 +506,7 @@ const KIND_LOOK = {
   gateway: { form: "dongle", w: 70, h: 32 },
   processor: { form: "box", w: 180, h: 110 },
   weather: { form: "ultrasonic", w: 100, h: 110 },
+  node: { form: "box", w: 180, h: 110 },
 };
 function lookOf(d) {
   const base = KIND_LOOK[d.cfg.kind] || KIND_LOOK.processor;

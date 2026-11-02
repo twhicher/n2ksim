@@ -444,6 +444,37 @@ impl Sim {
         }
     }
 
+    fn node_index(&self, id: &str) -> Option<usize> {
+        self.devices.iter().position(|d| d.cfg.id == id && d.cfg.kind == DeviceKind::Node)
+    }
+
+    /// A frame from the software behind node `id`, into its transmit queue
+    /// now. False, and the frame is lost, when there is no such node or it
+    /// is not on the bus (unpowered, unplugged, bus off), as with a real
+    /// interface.
+    pub fn node_send(&mut self, id: &str, frame: Frame) -> bool {
+        let t = self.t;
+        let Some(i) = self.node_index(id) else { return false };
+        let d = &mut self.devices[i];
+        if !d.cfg.enabled || !d.state.on_bus() {
+            return false;
+        }
+        // The node is known by the address its software sends from.
+        d.address = frame.can_id().source;
+        d.push(TxFrame { frame, ready_t: t, origin: Origin::Device(i) });
+        true
+    }
+
+    /// Every frame node `id` has heard since the last call, oldest first,
+    /// with the time each ended on the wire. Its own frames are not
+    /// included, nor frames destroyed by bus errors.
+    pub fn node_recv(&mut self, id: &str) -> Vec<(f64, Frame)> {
+        match self.node_index(id) {
+            Some(i) => self.devices[i].node_rx.drain(..).collect(),
+            None => Vec::new(),
+        }
+    }
+
     /// Send a frame from the web UI's own bus interface.
     pub fn inject(&mut self, f: Frame) {
         self.console.push_back(TxFrame { frame: f, ready_t: self.t, origin: Origin::Console });
@@ -626,6 +657,77 @@ mod tests {
         s.world.reset();
         assert_eq!(s.world.physics_as::<Turning>().unwrap().resets, 2);
         assert!(s.world.physics_as::<crate::world::SimpleBoat>().is_none());
+    }
+
+    /// The default network with a software node at the end of the backbone.
+    fn with_node() -> Sim {
+        let mut net = default_network();
+        let mut node = crate::network::template(DeviceKind::Node, "pc", "Pilot computer", 1);
+        node.tee_m = 7.5;
+        net.devices.push(node);
+        Sim::new(net, EnvCfg::default(), HelmCfg::default())
+    }
+
+    fn claim_from(src: u8, unique: u32) -> Frame {
+        let name = n2k::Name { unique_number: unique, manufacturer_code: 2000, device_function: 150, device_class: 40, industry_group: 4, arbitrary_address_capable: true, ..Default::default() };
+        Frame::new(n2k::CanId::new(6, pgn::ADDRESS_CLAIM, src, 255).encode(), &name.to_bytes())
+    }
+
+    #[test]
+    fn a_node_hears_the_bus_and_its_software_speaks_for_it() {
+        let mut s = with_node();
+        s.run_for(0.5);
+        let pc = s.devices.iter().find(|d| d.cfg.id == "pc").unwrap();
+        assert_eq!(pc.state, DevState::Online, "no claim of its own: the interface is just up");
+        assert_eq!(pc.address, n2k::canid::NULL_ADDRESS);
+        assert_eq!(pc.frames_tx, 0, "sends nothing by itself");
+
+        // Our software claims 30 and listens.
+        assert!(s.node_send("pc", claim_from(30, 777)));
+        s.run_for(3.0);
+        let heard = s.node_recv("pc");
+        assert!(s.node_recv("pc").is_empty(), "collected frames are gone");
+        assert!(heard.windows(2).all(|w| w[0].0 <= w[1].0), "oldest first");
+        assert!(heard.iter().all(|(t, _)| *t > 0.0 && *t <= s.t));
+        let from = |src: u8, p: u32| heard.iter().filter(|(_, f)| f.can_id().source == src && f.can_id().pgn == p).count();
+        assert!((25..=35).contains(&from(5, pgn::WIND)), "wind at 10 Hz: {}", from(5, pgn::WIND));
+        assert!(heard.iter().all(|(_, f)| f.can_id().source != 30), "not its own frames");
+        // The plotter saw the claim and asked our node who it is, as it
+        // would a real device; answering is the software's job.
+        assert!(heard.iter().any(|(_, f)| f.can_id().pgn == pgn::ISO_REQUEST && f.can_id().destination == 30));
+        let pc = s.devices.iter().find(|d| d.cfg.id == "pc").unwrap();
+        assert_eq!(pc.address, 30);
+        assert_eq!(pc.frames_tx, 1);
+        // The analyser saw it like anyone else's.
+        assert!(s.analyser.srcs[&30].name.is_some_and(|n| n2k::Name::from_u64(n).unique_number == 777));
+    }
+
+    #[test]
+    fn a_node_off_the_bus_hears_nothing_and_cannot_send() {
+        let mut s = with_node();
+        s.run_for(0.5);
+        let i = s.devices.iter().position(|d| d.cfg.id == "pc").unwrap();
+        s.devices[i].state = DevState::Unplugged { until: s.t + 1.0 };
+        s.node_recv("pc");
+        s.run_for(0.5);
+        assert!(!s.node_send("pc", claim_from(30, 777)));
+        assert!(s.node_recv("pc").is_empty());
+        assert!(!s.node_send("nobody", claim_from(30, 777)));
+        // Plugged back in, it hears again; anything it had queued is gone.
+        s.run_for(1.0);
+        assert_eq!(s.devices[i].state, DevState::Online);
+        assert!(s.node_send("pc", claim_from(30, 777)));
+        s.run_for(0.5);
+        assert!(!s.node_recv("pc").is_empty());
+    }
+
+    #[test]
+    fn a_node_that_is_not_read_loses_the_oldest_frames() {
+        let mut s = with_node();
+        s.run_for(60.0);
+        let pc = s.devices.iter().find(|d| d.cfg.id == "pc").unwrap();
+        assert_eq!(pc.node_rx.len(), crate::device::NODE_RX);
+        assert!(pc.node_overruns > 0);
     }
 
     impl crate::network::DeviceCfg {

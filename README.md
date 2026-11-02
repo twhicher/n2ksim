@@ -64,6 +64,8 @@ cargo run -p n2k --example ydraw_pilot -- 127.0.0.1:1457 160
 
 On a real gateway, one of its servers has to be switched to RAW; Yacht Devices' factory default is NMEA 0183 on TCP 1456. Port 1457 here is n2ksim's own choice.
 
+Software in the same process can be a node of its own instead, as a computer on the backbone through a CAN interface would be. Add a device of kind `node` to the network, then `sim.node_send(id, frame)` puts a frame in its transmit queue and `sim.node_recv(id)` returns every frame it has heard, with the time each ended on the wire. n2ksim models the node's transceiver (power, arbitration, errors, bus off) and nothing else: the software claims its own address, answers requests and sends its own heartbeat. Frames not collected are kept up to 4096, then the oldest are lost.
+
 ## Use the codec
 
 `crates/n2k` is a dependency-free NMEA 2000 codec you can use on its own: CAN identifiers, ISO NAME, fast packet, field definitions with generic encode and decode for 33 PGNs, and Yacht Devices RAW and candump log lines.
