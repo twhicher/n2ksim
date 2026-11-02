@@ -168,6 +168,18 @@ impl Sim {
         self.update_power();
     }
 
+    /// Load a whole new network (a preset or a saved file), keeping the
+    /// node devices of the program driving this simulation: they are its
+    /// computers, not part of the network being loaded.
+    pub fn load_network(&mut self, mut net: Network) {
+        for d in self.net.devices.iter().filter(|d| d.kind == DeviceKind::Node) {
+            if !net.devices.iter().any(|n| n.id == d.id) {
+                net.devices.push(d.clone());
+            }
+        }
+        self.set_network(net);
+    }
+
     pub fn gateway_index(&self) -> Option<usize> {
         self.devices.iter().position(|d| d.cfg.kind == DeviceKind::Gateway && d.cfg.enabled)
     }
@@ -757,6 +769,16 @@ mod tests {
         assert!(s.node_send("pc", claim_from(30, 777)));
         s.run_for(0.5);
         assert!(!s.node_recv("pc").is_empty());
+    }
+
+    #[test]
+    fn loading_a_network_keeps_the_hosts_node() {
+        let mut s = with_node();
+        s.run_for(0.5);
+        s.load_network(crate::scenarios::network_preset("bg").unwrap());
+        assert!(s.devices.iter().any(|d| d.cfg.id == "pc" && d.cfg.kind == DeviceKind::Node));
+        s.run_for(0.5);
+        assert!(s.node_send("pc", claim_from(30, 777)));
     }
 
     #[test]

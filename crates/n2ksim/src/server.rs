@@ -493,6 +493,9 @@ fn post(sim: &mut Sim, ctx: &Ctx, path: &str, b: &J) -> Result<J, String> {
         }
         "/api/device/remove" => {
             let id = s("id");
+            if sim.net.devices.iter().any(|d| d.id == id && d.kind == DeviceKind::Node) {
+                return Err("That computer belongs to the program running this simulation. Unplug it instead.".into());
+            }
             let mut net = sim.net.clone();
             net.devices.retain(|d| d.id != id);
             sim.set_network(net);
@@ -533,7 +536,7 @@ fn post(sim: &mut Sim, ctx: &Ctx, path: &str, b: &J) -> Result<J, String> {
         "/api/network" => {
             let net = scenarios::network_preset(&s("key"))?;
             sim.pre_drill_backbone = None;
-            sim.set_network(net);
+            sim.load_network(net);
             sim.analyser.reset();
         }
         "/api/inject" => {
@@ -609,7 +612,7 @@ fn post(sim: &mut Sim, ctx: &Ctx, path: &str, b: &J) -> Result<J, String> {
                 sim.world.env = saved.env;
                 sim.world.helm = saved.helm;
             }
-            sim.set_network(saved.network);
+            sim.load_network(saved.network);
         }
         _ => return Err("unknown endpoint".into()),
     }
