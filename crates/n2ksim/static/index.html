@@ -49,6 +49,8 @@ a { color: var(--ink); }
 .btn { background: var(--paper); border: 1px solid var(--ink); border-bottom-width: 2.5px; border-radius: 5px; padding: 4px 11px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
 .btn:hover { background: var(--ink); color: var(--paper); }
 .btn:active { transform: translateY(1px); border-bottom-width: 1.5px; }
+.btn:disabled, .seg button:disabled, input:disabled { opacity: .45; cursor: not-allowed; }
+.btn:disabled:hover, .seg button:disabled:hover { background: var(--paper); color: inherit; }
 .btn.solid { background: var(--orange); color: var(--ink); }
 .btn.solid:hover { background: var(--ink); color: var(--orange); }
 .btn.small { padding: 2px 8px; font-size: 13px; }
@@ -179,6 +181,7 @@ code { font-family: var(--mono); font-size: 12px; background: var(--wash); paddi
   <div>
     <div id="offline">Lost connection to the simulator. Retrying.</div>
     <header class="tb" id="tb">
+      <a class="btn" id="backbtn" style="display:none"></a>
       <div class="name">n2ksim</div>
       <div class="cell"><div><small>Network</small><b id="netname">…</b></div></div>
       <div class="cell"><div><small>UTC</small><b id="clock">--:--:--</b></div></div>
@@ -304,13 +307,13 @@ function readInput(inp) {
 
 /* ---------- live data ---------- */
 function connect() {
-  const es = new EventSource("/api/events");
+  const es = new EventSource("api/events");
   es.onopen = () => $("#offline").style.display = "none";
   es.onerror = () => { $("#offline").style.display = "block"; };
   es.onmessage = e => {
     const d = JSON.parse(e.data);
     if (d.kinds) {
-      META = { kinds: d.kinds, drills: d.drills, presets: d.presets, pgn_defs: d.pgn_defs, library: d.library || [], variants: Object.fromEntries(d.variants || []), networks: d.networks || [], hosted: !!d.hosted };
+      META = { kinds: d.kinds, drills: d.drills, presets: d.presets, pgn_defs: d.pgn_defs, library: d.library || [], variants: Object.fromEntries(d.variants || []), networks: d.networks || [], hosted: !!d.hosted, mount: d.mount || null, owner: d.owner || null };
       META.pgn_defs.forEach(p => PGN_NAMES[p.pgn] = p.name);
       buildStatic();
     }
@@ -412,19 +415,23 @@ function readingFor(d) {
 
 /* ---------- static structure ---------- */
 function buildStatic() {
+  const bb = $("#backbtn");
+  if (META.mount) { bb.textContent = META.mount.back_label; bb.href = META.mount.back_href; bb.title = "Back to " + META.mount.host; bb.style.display = ""; }
   const sp = $("#speed"); sp.innerHTML = "";
+  sp.parentElement.style.display = META.mount ? "none" : "";
+  $("#gw").style.display = META.mount ? "none" : "";
   const pause = document.createElement("button"); pause.id = "pausebtn"; pause.title = "Pause or resume";
-  pause.onclick = () => api("/api/control", { action: S.paused ? "resume" : "pause" });
+  pause.onclick = () => api("api/control", { action: S.paused ? "resume" : "pause" });
   sp.append(pause);
   for (const x of [1, 2, 5, 10, 20]) {
     const b = document.createElement("button"); b.textContent = x + "×"; b.dataset.speed = x; b.title = `${x} times real time`;
-    b.onclick = () => api("/api/control", { action: "speed", speed: x }); sp.append(b);
+    b.onclick = () => api("api/control", { action: "speed", speed: x }); sp.append(b);
   }
-  if (META.hosted) {
+  if (META.hosted || META.mount) {
     const sb = $("#savebtn"); sb.textContent = "Download"; sb.title = "Download this network and its conditions as JSON";
-    sb.onclick = () => { location.href = "/api/export"; };
+    sb.onclick = () => { location.href = "api/export"; };
   } else {
-    $("#savebtn").onclick = async () => { const j = await api("/api/control", { action: "save" }); if (j.ok) toast("Saved to " + j.saved, true); };
+    $("#savebtn").onclick = async () => { const j = await api("api/control", { action: "save" }); if (j.ok) toast("Saved to " + j.saved, true); };
   }
   buildMeter(); buildNetwork(); buildInstruments(); buildTraffic(); buildSailing(); buildTest();
 }
@@ -459,10 +466,10 @@ function buildTest() {
   $("#drills").innerHTML = META.drills.map(x => `<button class="drill" data-k="${esc(x.key)}">${esc(x.title)}<span>${esc(x.what)}</span></button>`).join("");
   $$("#drills .drill").forEach(b => b.onclick = () => {
     const x = META.drills.find(d => d.key === b.dataset.k);
-    api("/api/drill", { key: x.key }).then(j => j.ok && toast(x.title + (j.device ? ": " + j.device : ""), true));
+    api("api/drill", { key: x.key }).then(j => j.ok && toast(x.title + (j.device ? ": " + j.device : ""), true));
   });
-  $("#clearfaults").onclick = () => api("/api/drill", { key: "clear_faults" }).then(j => j.ok && toast("Faults cleared", true));
-  $("#powercycle").onclick = () => api("/api/control", { action: "power_cycle" });
+  $("#clearfaults").onclick = () => api("api/drill", { key: "clear_faults" }).then(j => j.ok && toast("Faults cleared", true));
+  $("#powercycle").onclick = () => api("api/control", { action: "power_cycle" });
 }
 function renderTest() {
   const cs = S.checks;
@@ -692,16 +699,16 @@ function buildNetwork() {
   $("#netbtn").onclick = async () => {
     const n = META.networks.find(x => x.key === $("#netpreset").value);
     if (!n || !confirm(`Replace the network with ${n.title}?\n\n${n.what}`)) return;
-    const j = await api("/api/network", { key: n.key });
+    const j = await api("api/network", { key: n.key });
     if (j.ok) { UI.device = null; UI.sources = {}; toast(n.title + " loaded", true); }
   };
-  $$("[data-bb]").forEach(inp => inp.onchange = () => api("/api/backbone", { [inp.dataset.bb]: readInput(inp) }));
+  $$("[data-bb]").forEach(inp => inp.onchange = () => api("api/backbone", { [inp.dataset.bb]: readInput(inp) }));
   renderLibrary();
   initDrag();
 }
 async function addDevice(v) {
   const [t, k] = v.split(":");
-  const j = await api("/api/device/add", t === "lib" ? { library: k } : { kind: k });
+  const j = await api("api/device/add", t === "lib" ? { library: k } : { kind: k });
   if (j.ok) { UI.device = j.id; setTab("network"); }
 }
 
@@ -794,19 +801,19 @@ function initDrag() {
     const d = drag; drag = null;
     if (!d.moved) { if (d.id !== "__power") { UI.device = UI.device === d.id ? null : d.id; render(); } return; }
     if (d.slot == null) { render(); return; }
-    if (d.id === "__power") api("/api/backbone", { power_tap_m: d.slot });
-    else api("/api/device", { id: d.id, patch: { tee_m: d.slot } });
+    if (d.id === "__power") api("api/backbone", { power_tap_m: d.slot });
+    else api("api/device", { id: d.id, patch: { tee_m: d.slot } });
   };
   svg.addEventListener("pointerup", end);
   svg.addEventListener("pointercancel", () => { drag = null; render(); });
   svg.addEventListener("click", e => {
     const t = e.target.closest(".term"); if (!t) return;
-    api("/api/backbone", { [t.dataset.k]: !S.backbone[t.dataset.k] });
+    api("api/backbone", { [t.dataset.k]: !S.backbone[t.dataset.k] });
   });
   svg.addEventListener("keydown", e => {
     if (e.key !== "Enter" && e.key !== " ") return;
     const t = e.target.closest(".term");
-    if (t) { e.preventDefault(); api("/api/backbone", { [t.dataset.k]: !S.backbone[t.dataset.k] }); return; }
+    if (t) { e.preventDefault(); api("api/backbone", { [t.dataset.k]: !S.backbone[t.dataset.k] }); return; }
     const g = e.target.closest("[data-id]"); if (!g || g.dataset.id === "__power") return;
     e.preventDefault(); UI.device = g.dataset.id; render();
   });
@@ -1052,12 +1059,12 @@ function buildInspector(d) {
     let v = readInput(inp);
     const p = inp.dataset.p;
     if (inp.type === "number" && !["tee_m", "drop_m"].includes(p) && !p.startsWith("faults.")) v = Math.round(v);
-    api("/api/device", { id: c.id, patch: setPath(p, v) });
+    api("api/device", { id: c.id, patch: setPath(p, v) });
   });
   $("#ins-close").onclick = () => { UI.device = null; render(); };
-  $("#ins-reboot").onclick = () => api("/api/device/action", { id: c.id, action: "reboot" });
-  $("#ins-unplug").onclick = () => api("/api/device/action", { id: c.id, action: "unplug", secs: 5 });
-  $("#ins-remove").onclick = () => confirm(`Remove ${c.label}?`) && api("/api/device/remove", { id: c.id }).then(() => { UI.device = null; });
+  $("#ins-reboot").onclick = () => api("api/device/action", { id: c.id, action: "reboot" });
+  $("#ins-unplug").onclick = () => api("api/device/action", { id: c.id, action: "unplug", secs: 5 });
+  $("#ins-remove").onclick = () => confirm(`Remove ${c.label}?`) && api("api/device/remove", { id: c.id }).then(() => { UI.device = null; });
 }
 function renderInspector() {
   const box = $("#inspector");
@@ -1090,7 +1097,7 @@ function renderInspector() {
     $$("[data-pi]", pt).forEach(inp => inp.onchange = () => {
       const cur = S.devices.find(x => x.cfg.id === UI.device).cfg.pgns.map(x => ({ ...x }));
       cur[+inp.dataset.pi][inp.dataset.k] = readInput(inp);
-      api("/api/device", { id: c.id, patch: { pgns: cur } });
+      api("api/device", { id: c.id, patch: { pgns: cur } });
     });
   }
   $$("[data-pi]", pt).forEach(inp => {
@@ -1327,8 +1334,8 @@ function buildTraffic() {
         </div></div></section>
       <section class="sheet"><h2>Capture and replay</h2><div class="body">
         <div class="row">
-          <a class="btn" href="/api/capture?format=candump" download>Download candump</a>
-          <a class="btn" href="/api/capture?format=ydraw" download>Download Yacht Devices RAW</a>
+          <a class="btn" href="api/capture?format=candump" download>Download candump</a>
+          <a class="btn" href="api/capture?format=ydraw" download>Download Yacht Devices RAW</a>
           <button class="btn" id="capclear">Clear</button>
           <span class="muted"><span id="capcount" class="din"></span> frames held</span>
         </div>
@@ -1351,16 +1358,16 @@ function buildTraffic() {
   $("#logpause").onclick = () => { UI.logPaused = !UI.logPaused; $("#logpause").textContent = UI.logPaused ? "Resume" : "Pause"; };
   $("#logfilter").oninput = e => { UI.filter = e.target.value.trim().toLowerCase(); renderLog(true); };
   $("#logerr").onchange = e => { UI.errorsOnly = e.target.checked; if (e.target.checked) { UI.logMode = "frames"; $$("#logmode button").forEach(x => x.classList.toggle("on", x.dataset.m === "frames")); } renderLog(true); };
-  $("#in-send").onclick = () => api("/api/inject", { priority: +$("#in-prio").value, pgn: +$("#in-pgn").value, src: +$("#in-src").value, dst: +$("#in-dst").value, data: $("#in-data").value }).then(j => j.ok && toast("Sent", true));
-  $("#in-rawsend").onclick = () => { const p = $("#in-raw").value.trim().split(/\s+/); api("/api/inject", { id: p[0] || "", data: p.slice(1).join("") }).then(j => j.ok && toast("Sent", true)); };
-  $$("[data-req]").forEach(b => b.onclick = () => api("/api/control", { action: "request", pgn: +b.dataset.req, dst: 255 }).then(j => j.ok && toast("Asked", true)));
-  $("#capclear").onclick = () => api("/api/control", { action: "clear_capture" });
+  $("#in-send").onclick = () => api("api/inject", { priority: +$("#in-prio").value, pgn: +$("#in-pgn").value, src: +$("#in-src").value, dst: +$("#in-dst").value, data: $("#in-data").value }).then(j => j.ok && toast("Sent", true));
+  $("#in-rawsend").onclick = () => { const p = $("#in-raw").value.trim().split(/\s+/); api("api/inject", { id: p[0] || "", data: p.slice(1).join("") }).then(j => j.ok && toast("Sent", true)); };
+  $$("[data-req]").forEach(b => b.onclick = () => api("api/control", { action: "request", pgn: +b.dataset.req, dst: 255 }).then(j => j.ok && toast("Asked", true)));
+  $("#capclear").onclick = () => api("api/control", { action: "clear_capture" });
   $("#replaygo").onclick = async () => {
     const f = $("#replayfile").files[0]; if (!f) return toast("Choose a log file first");
-    const j = await api("/api/replay", { name: f.name, text: await f.text(), mute: $("#replaymute").checked });
+    const j = await api("api/replay", { name: f.name, text: await f.text(), mute: $("#replaymute").checked });
     if (j.ok) toast(`Replaying ${j.frames} frames over ${fix(j.seconds, 0)} s${j.skipped_lines ? `, ${j.skipped_lines} lines not understood` : ""}`, true);
   };
-  $("#replaystop").onclick = () => api("/api/control", { action: "stop_replay" });
+  $("#replaystop").onclick = () => api("api/control", { action: "stop_replay" });
 }
 function chart(cv, series, max, fmt) {
   const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
@@ -1450,6 +1457,7 @@ function buildSailing() {
     </div>
     <div class="cols">
       <section class="sheet"><h2>Wind and sea</h2><div class="body">
+        <p style="margin:0 0 10px" id="ownednote"></p>
         <div class="row">${f("tws_kn", "Wind kn", 0.5)}${f("twd_deg", "From °T", 5)}${f("gust_pct", "Gusts %", 1)}${f("shift_deg", "Shifts °", 1)}</div>
         <div class="row" style="margin-top:10px">${f("wave_height_m", "Waves m", 0.1)}${f("wave_period_s", "Period s", 0.5)}${f("wave_dir_deg", "From °T", 5)}</div>
         <div class="row" style="margin-top:10px">${f("current_kn", "Stream kn", 0.1)}${f("current_set_deg", "Setting °T", 5)}</div></div></section>
@@ -1458,25 +1466,37 @@ function buildSailing() {
         <div class="row" style="margin-top:10px">${f("variation_deg", "Variation °, east +", 0.1)}${f("water_temp_c", "Sea °C", 0.1)}${f("air_temp_c", "Air °C", 0.1)}${f("pressure_hpa", "Pressure hPa", 1)}</div>
         <div class="row" style="margin-top:10px">${f("seed", "Seed, on reset", 1)}</div></div></section>
     </div>
-    <section class="sheet"><h2>Connecting the autopilot</h2><div class="body">
+    <section class="sheet" id="gwsheet"><h2>Connecting the autopilot</h2><div class="body">
       <p style="margin:0 0 6px;max-width:80ch">The simulator listens like a Yacht Devices gateway set to RAW, at <code id="gwaddr"></code>. Every frame arrives as a line; send one by writing its identifier and bytes. With steering on Autopilot, the simulated rudder drive follows the angle order in PGN 127245.</p>
       <pre class="help" id="gwhelp"></pre>
       <p style="margin:6px 0 0">A working client is in <code>crates/n2k/examples/ydraw_pilot.rs</code>.</p></div></section>`;
   $("#presets").innerHTML = META.presets.map(p => `<button class="btn" data-preset="${esc(p.key)}">${esc(p.title)}</button>`).join("");
-  $$("[data-preset]").forEach(b => b.onclick = () => api("/api/preset", { key: b.dataset.preset }));
-  $$("[data-env]").forEach(inp => inp.onchange = () => api("/api/world", { env: { [inp.dataset.env]: readInput(inp) } }));
-  $$("[data-helm]").forEach(inp => { inp.onchange = () => api("/api/world", { helm: { [inp.dataset.helm]: readInput(inp) } }); if (inp.type === "range") inp.oninput = inp.onchange; });
-  $$("#helmmode button").forEach(b => b.onclick = () => api("/api/world", { helm: { mode: b.dataset.m } }));
-  $$("[data-turn]").forEach(b => b.onclick = () => api("/api/world", { helm: { course_deg: wrap360(S.helm.course_deg + +b.dataset.turn) } }));
-  $("#resetboat").onclick = () => { UI.track = []; UI.truthTrack = []; api("/api/control", { action: "reset_world" }); };
+  $$("[data-preset]").forEach(b => b.onclick = () => api("api/preset", { key: b.dataset.preset }));
+  $$("[data-env]").forEach(inp => inp.onchange = () => api("api/world", { env: { [inp.dataset.env]: readInput(inp) } }));
+  $$("[data-helm]").forEach(inp => { inp.onchange = () => api("api/world", { helm: { [inp.dataset.helm]: readInput(inp) } }); if (inp.type === "range") inp.oninput = inp.onchange; });
+  $$("#helmmode button").forEach(b => b.onclick = () => api("api/world", { helm: { mode: b.dataset.m } }));
+  $$("[data-turn]").forEach(b => b.onclick = () => api("api/world", { helm: { course_deg: wrap360(S.helm.course_deg + +b.dataset.turn) } }));
+  $("#resetboat").onclick = () => { UI.track = []; UI.truthTrack = []; api("api/control", { action: "reset_world" }); };
+  // Another simulator sets the wind, sea and steering: show them, read only.
+  const owner = META.owner;
+  const OWNED_ENV = ["tws_kn", "twd_deg", "gust_pct", "shift_deg", "current_kn", "current_set_deg", "wave_height_m", "wave_period_s", "wave_dir_deg"];
+  $$("[data-env]").forEach(inp => inp.disabled = !!owner && OWNED_ENV.includes(inp.dataset.env));
+  $$("[data-helm], [data-turn], #helmmode button").forEach(el => el.disabled = !!owner);
+  $("#presets").style.display = owner ? "none" : "";
+  $("#resetboat").style.display = owner ? "none" : "";
+  $("#gwsheet").style.display = META.mount ? "none" : "";
+  $("#ownednote").textContent = owner ? `Set on deck in ${owner}; shown here as they are now.` : "";
+  $("#ownednote").style.display = owner ? "" : "none";
 }
 function renderSailing() {
   $$("[data-env]").forEach(inp => syncInput(inp, S.env[inp.dataset.env]));
   $$("[data-helm]").forEach(inp => syncInput(inp, S.helm[inp.dataset.helm]));
   $("#rudtxt").textContent = fix(S.helm.rudder_deg, 1) + "°";
-  $$("#helmmode button").forEach(b => b.classList.toggle("on", b.dataset.m === S.helm.mode));
+  $$("#helmmode button").forEach(b => b.classList.toggle("on", !META.owner && b.dataset.m === S.helm.mode));
   const t = S.truth;
-  $("#helmnote").textContent = S.helm.mode === "external"
+  $("#helmnote").textContent = META.owner
+    ? `${META.owner} steers the boat, driving the rudder directly rather than over the bus.`
+    : S.helm.mode === "external"
     ? (t.external_timed_out ? `No angle order for over ${S.helm.order_timeout_s} s, so the drive is holding ${fix(t.rudder_order, 1)}°. ${S.gateway.clients} gateway client${S.gateway.clients === 1 ? "" : "s"} connected.` : `Following angle orders: ${fix(t.rudder_order, 1)}°.`)
     : S.helm.mode === "hold" ? "A simple built-in helmsman holds the course, so the boat keeps sailing while nothing else steers." : "The rudder stays where you put it.";
   const rows = [
@@ -1531,7 +1551,7 @@ document.addEventListener("keydown", e => {
   const tabs = ["network", "instruments", "traffic", "sailing"];
   if (e.key >= "1" && e.key <= "4") setTab(tabs[+e.key - 1]);
   else if (e.key === "t" || e.key === "T") setTest(!$("#test").classList.contains("open"));
-  else if ((e.key === "p" || e.key === "P") && S) api("/api/control", { action: S.paused ? "resume" : "pause" });
+  else if ((e.key === "p" || e.key === "P") && S && !META.mount) api("api/control", { action: S.paused ? "resume" : "pause" });
 });
 function render() {
   if (!S || !META.kinds.length) return;

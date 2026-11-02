@@ -82,6 +82,8 @@ assert_eq!(m.lookup("reference"), Some(2));
 
 The built-in boat is simple on purpose. If you have a better model, plug it in and the instruments measure your boat instead: implement `world::Physics` (step by `dt`, write the boat's `State`: position, heading and rates, heel and pitch, heave, speed and leeway, ground track, true and apparent wind at the masthead, rudder) and build the simulation with `Sim::with_physics`. The seabed, temperatures, pressure, magnetic variation and the clock stay n2ksim's. `world.physics_as_mut::<YourBoat>()` gets your model back to steer it or read its truth.
 
+If your physics names an owner (`Physics::owner`), the page shows the wind, sea and steering as set by that program, read only. To serve the page as part of your own app, build the context with `Ctx::mounted`, read each request with `server::read_head`, and pass those under your prefix to `server::answer` with the prefix taken off. The page's paths are relative, so any prefix works, as long as it ends in a slash. `cargo run --release -p n2ksim --example mounted` shows it working at `http://127.0.0.1:8095/network/`.
+
 ## Instruments, networks and drills
 
 The library lives in `crates/n2ksim/library/instruments.json`. A library device sends whichever of the real unit's PGNs the simulator can generate, at the documented interval or canboat's usual one; PGNs it cannot generate yet (mostly proprietary ones, AIS and satellites in view) are listed, not sent. Anything the documentation does not give is left out and listed under gaps and conflicts, never guessed.

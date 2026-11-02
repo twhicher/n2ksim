@@ -51,7 +51,23 @@ pub struct Visitor {
     pub streams: usize,
 }
 
+/// n2ksim's page served by another program under a path of its own (say
+/// `/network/`), as part of that program. The host runs the clock and
+/// reads requests; see [`read_head`] and [`answer`].
+pub struct Mount {
+    /// The host program's name, for the page's messages.
+    pub host: String,
+    /// The label and link of the page's way back to the host's own page.
+    pub back_label: String,
+    pub back_href: String,
+    /// Open to the public: no saving, larger uploads refused, and changes
+    /// only from the host the page was served from, as with `--hosted`.
+    pub public: bool,
+}
+
 pub struct Ctx {
+    /// Set when another program serves this page as part of its own.
+    pub mount: Option<Mount>,
     /// The one simulation when running locally.
     pub local: Option<Arc<Mutex<Sim>>>,
     /// One simulation per visitor when hosted.
@@ -65,11 +81,22 @@ pub struct Ctx {
 
 impl Ctx {
     pub fn local(sim: Arc<Mutex<Sim>>, port: u16, gateway_addr: String, config_path: PathBuf) -> Self {
-        Ctx { local: Some(sim), visitors: Mutex::new(HashMap::new()), hosted: None, port, gateway_addr, config_path, connections: AtomicUsize::new(0) }
+        Ctx { mount: None, local: Some(sim), visitors: Mutex::new(HashMap::new()), hosted: None, port, gateway_addr, config_path, connections: AtomicUsize::new(0) }
+    }
+
+    /// One simulation, served by another program on `port` (see [`Mount`]).
+    /// No gateway and no saving to disk.
+    pub fn mounted(sim: Arc<Mutex<Sim>>, port: u16, mount: Mount) -> Self {
+        Ctx { mount: Some(mount), local: Some(sim), visitors: Mutex::new(HashMap::new()), hosted: None, port, gateway_addr: "off".into(), config_path: PathBuf::new(), connections: AtomicUsize::new(0) }
+    }
+
+    /// Open to the public, by `--hosted` or a public mount.
+    fn public(&self) -> bool {
+        self.hosted.is_some() || self.mount.as_ref().is_some_and(|m| m.public)
     }
 
     pub fn hosted(h: Hosted, port: u16) -> Self {
-        Ctx { local: None, visitors: Mutex::new(HashMap::new()), hosted: Some(h), port, gateway_addr: "off".into(), config_path: PathBuf::new(), connections: AtomicUsize::new(0) }
+        Ctx { mount: None, local: None, visitors: Mutex::new(HashMap::new()), hosted: Some(h), port, gateway_addr: "off".into(), config_path: PathBuf::new(), connections: AtomicUsize::new(0) }
     }
 
     /// Every running simulation, for the clock thread.
@@ -209,6 +236,46 @@ fn err(s: &mut TcpStream, msg: &str) {
     respond(s, "400 Bad Request", "application/json", "", json!({"ok": false, "error": msg}).to_string().as_bytes());
 }
 
+/// The request line and the headers n2ksim uses.
+#[derive(Clone, Debug, Default)]
+pub struct Head {
+    pub method: String,
+    /// Path and query. A host serving n2ksim under a prefix strips it first.
+    pub target: String,
+    pub content_length: usize,
+    pub origin: Option<String>,
+    pub host: Option<String>,
+    pub cookie: Option<String>,
+    pub auth: Option<String>,
+}
+
+/// Read a request's line and headers, leaving the body in `reader`.
+pub fn read_head(reader: &mut impl BufRead) -> Option<Head> {
+    let mut line = String::new();
+    reader.read_line(&mut line).ok()?;
+    let mut parts = line.split_whitespace();
+    let mut head = Head { method: parts.next().unwrap_or("").to_string(), target: parts.next().unwrap_or("/").to_string(), ..Default::default() };
+    loop {
+        let mut h = String::new();
+        if reader.read_line(&mut h).is_err() || h == "\r\n" || h.is_empty() {
+            break;
+        }
+        let Some((name, value)) = h.split_once(':') else { continue };
+        let value = value.trim().to_string();
+        match name.trim().to_ascii_lowercase().as_str() {
+            "content-length" => head.content_length = value.parse().unwrap_or(0),
+            "origin" => head.origin = Some(value.to_ascii_lowercase()),
+            "host" => head.host = Some(value.to_ascii_lowercase()),
+            "authorization" => head.auth = Some(value),
+            "cookie" => {
+                head.cookie = value.split(';').filter_map(|c| c.trim().split_once('=')).find(|(k, _)| *k == COOKIE).map(|(_, v)| v.to_string()).filter(|v| v.len() == 32 && v.bytes().all(|b| b.is_ascii_hexdigit()));
+            }
+            _ => {}
+        }
+    }
+    Some(head)
+}
+
 fn handle(mut stream: TcpStream, ctx: &Ctx) {
     let open = ctx.connections.fetch_add(1, Ordering::Relaxed) + 1;
     let _guard = ConnGuard(&ctx.connections);
@@ -219,34 +286,15 @@ fn handle(mut stream: TcpStream, ctx: &Ctx) {
     let _ = stream.set_read_timeout(Some(Duration::from_secs(10)));
     let Ok(clone) = stream.try_clone() else { return };
     let mut reader = BufReader::new(clone);
-    let mut line = String::new();
-    if reader.read_line(&mut line).is_err() {
-        return;
-    }
-    let mut parts = line.split_whitespace();
-    let method = parts.next().unwrap_or("").to_string();
-    let target = parts.next().unwrap_or("/").to_string();
-    let mut len = 0usize;
-    let (mut origin, mut host, mut cookie, mut auth) = (None, None, None, None);
-    loop {
-        let mut h = String::new();
-        if reader.read_line(&mut h).is_err() || h == "\r\n" || h.is_empty() {
-            break;
-        }
-        let Some((name, value)) = h.split_once(':') else { continue };
-        let value = value.trim().to_string();
-        match name.trim().to_ascii_lowercase().as_str() {
-            "content-length" => len = value.parse().unwrap_or(0),
-            "origin" => origin = Some(value.to_ascii_lowercase()),
-            "host" => host = Some(value.to_ascii_lowercase()),
-            "authorization" => auth = Some(value),
-            "cookie" => {
-                cookie = value.split(';').filter_map(|c| c.trim().split_once('=')).find(|(k, _)| *k == COOKIE).map(|(_, v)| v.to_string()).filter(|v| v.len() == 32 && v.bytes().all(|b| b.is_ascii_hexdigit()));
-            }
-            _ => {}
-        }
-    }
+    let Some(head) = read_head(&mut reader) else { return };
+    answer(stream, reader, ctx, head);
+}
 
+/// Answer one request whose head has been read. `reader` holds the body.
+/// A host serving n2ksim under a prefix calls this with the prefix taken
+/// off `head.target`, after its own checks (a password, say).
+pub fn answer(mut stream: TcpStream, mut reader: impl BufRead, ctx: &Ctx, head: Head) {
+    let Head { method, target, content_length: len, origin, host, cookie, auth } = head;
     if let Some(pw) = ctx.hosted.as_ref().and_then(|h| h.password.as_ref()) {
         let given = auth.as_deref().and_then(|a| a.strip_prefix("Basic ")).and_then(base64_decode).and_then(|b| String::from_utf8(b).ok());
         let pass_ok = given.as_deref().and_then(|g| g.split_once(':')).is_some_and(|(_, p)| same(p.as_bytes(), pw.as_bytes()));
@@ -297,12 +345,12 @@ fn handle(mut stream: TcpStream, ctx: &Ctx) {
     // Changes must come from this site's own page. Locally the allowed
     // origins are fixed, which also defeats DNS rebinding; hosted, the page's
     // origin must match the host it was served from.
-    let same_site = match &ctx.hosted {
-        None => {
+    let same_site = match ctx.public() {
+        false => {
             let allowed = [format!("http://127.0.0.1:{}", ctx.port), format!("http://localhost:{}", ctx.port)];
             origin.as_ref().is_none_or(|o| allowed.contains(o))
         }
-        Some(_) => match (&origin, &host) {
+        true => match (&origin, &host) {
             (Some(o), Some(h)) => *o == format!("https://{h}") || *o == format!("http://{h}"),
             (None, _) => true,
             _ => false,
@@ -312,7 +360,7 @@ fn handle(mut stream: TcpStream, ctx: &Ctx) {
         respond(&mut stream, "403 Forbidden", "text/plain", "", b"cross-origin request refused");
         return;
     }
-    if len > if ctx.hosted.is_some() { MAX_BODY_HOSTED } else { MAX_BODY } {
+    if len > if ctx.public() { MAX_BODY_HOSTED } else { MAX_BODY } {
         return err(&mut stream, "That upload is too large.");
     }
     let mut body = vec![0u8; len];
@@ -361,8 +409,12 @@ fn hex_bytes(s: &str) -> Result<Vec<u8>, String> {
 
 fn post(sim: &mut Sim, ctx: &Ctx, path: &str, b: &J) -> Result<J, String> {
     let s = |k: &str| b.get(k).and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let owner = sim.world.physics().owner().map(str::to_string);
+    let not_here = |what: &str, by: &str| Err(format!("{what} {by}, not here."));
     match path {
         "/api/control" => match s("action").as_str() {
+            "pause" | "resume" | "speed" if ctx.mount.is_some() => return not_here("Time is run", &format!("on deck in {}", ctx.mount.as_ref().unwrap().host)),
+            "reset_world" if owner.is_some() => return not_here("The boat is reset", &format!("in {}", owner.unwrap())),
             "pause" => sim.paused = true,
             "resume" => sim.paused = false,
             "speed" => sim.speed = b.get("speed").and_then(|v| v.as_f64()).unwrap_or(1.0).clamp(0.1, 50.0),
@@ -374,6 +426,7 @@ fn post(sim: &mut Sim, ctx: &Ctx, path: &str, b: &J) -> Result<J, String> {
             "clear_capture" => sim.ring.clear(),
             "stop_replay" => sim.replay = None,
             "save" if ctx.hosted.is_some() => return Err("Saving to the server is off in the hosted version; use Download instead.".into()),
+            "save" if ctx.mount.is_some() => return Err("Saving to a file is off here; use Download instead.".into()),
             "save" => {
                 let saved = Saved { network: sim.net.clone(), env: sim.world.env.clone(), helm: sim.world.helm.clone() };
                 let text = serde_json::to_string_pretty(&saved).map_err(|e| e.to_string())?;
@@ -459,6 +512,11 @@ fn post(sim: &mut Sim, ctx: &Ctx, path: &str, b: &J) -> Result<J, String> {
             }
         }
         "/api/world" => {
+            if let Some(by) = &owner {
+                if b.get("helm").is_some() || b.get("env").and_then(|e| e.as_object()).is_some_and(|e| e.keys().any(|k| crate::world::OWNED_ENV.contains(&k.as_str()))) {
+                    return not_here("Wind, sea and steering are set", &format!("in {by}"));
+                }
+            }
             if let Some(e) = b.get("env") {
                 sim.world.env = patched(&sim.world.env, e)?;
             }
@@ -470,6 +528,7 @@ fn post(sim: &mut Sim, ctx: &Ctx, path: &str, b: &J) -> Result<J, String> {
             let hit = scenarios::drill(sim, &s("key"))?;
             return Ok(json!({"ok": true, "device": hit}));
         }
+        "/api/preset" if owner.is_some() => return not_here("Wind, sea and steering are set", &format!("in {}", owner.unwrap())),
         "/api/preset" => scenarios::preset(sim, &s("key"))?,
         "/api/network" => {
             let net = scenarios::network_preset(&s("key"))?;
@@ -543,8 +602,13 @@ fn post(sim: &mut Sim, ctx: &Ctx, path: &str, b: &J) -> Result<J, String> {
         }
         "/api/load" => {
             let saved: Saved = serde_json::from_value(b.clone()).map_err(|e| format!("not a saved network: {e}"))?;
-            sim.world.env = saved.env;
-            sim.world.helm = saved.helm;
+            if owner.is_some() {
+                // Wind, sea and steering stay the owner's.
+                sim.world.env = sim.world.env.with_n2ksim_part_of(&saved.env);
+            } else {
+                sim.world.env = saved.env;
+                sim.world.helm = saved.helm;
+            }
             sim.set_network(saved.network);
         }
         _ => return Err("unknown endpoint".into()),
@@ -799,7 +863,9 @@ pub fn snapshot(s: &Sim, ctx: &Ctx, full: bool) -> J {
         out["presets"] = scenarios::PRESETS.iter().map(|p| json!({"key": p.key, "title": p.title})).collect();
         out["pgn_defs"] = pgn::DEFS.iter().map(|d| json!({"pgn": d.pgn, "name": d.name, "fast": d.fast, "priority": d.priority, "interval_ms": d.interval_ms})).collect();
         out["config_path"] = json!(ctx.config_path.display().to_string());
-        out["hosted"] = json!(ctx.hosted.is_some());
+        out["hosted"] = json!(ctx.public());
+        out["mount"] = json!(ctx.mount.as_ref().map(|m| json!({"host": m.host, "back_label": m.back_label, "back_href": m.back_href})));
+        out["owner"] = json!(s.world.physics().owner());
         out["library"] = crate::library::entries()
             .iter()
             .map(|e| {
@@ -814,4 +880,125 @@ pub fn snapshot(s: &Sim, ctx: &Ctx, full: bool) -> J {
         out["variants"] = crate::device::VARIANTS.iter().map(|(p, v)| json!([p, v])).collect();
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::network::default_network;
+    use crate::world::{Physics, SimpleBoat, State};
+
+    /// n2ksim's own boat, but owned by "Ghost", as a stand-in for another
+    /// simulator's.
+    struct Owned(SimpleBoat);
+    impl Physics for Owned {
+        fn reset(&mut self, env: &EnvCfg, helm: &HelmCfg, s: &mut State) {
+            self.0.reset(env, helm, s)
+        }
+        fn step(&mut self, dt: f64, t: f64, env: &EnvCfg, order: f64, s: &mut State) {
+            self.0.step(dt, t, env, order, s)
+        }
+        fn owner(&self) -> Option<&str> {
+            Some("Ghost")
+        }
+        fn as_any(&self) -> &dyn std::any::Any {
+            self
+        }
+        fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+            self
+        }
+    }
+
+    fn mounted(public: bool) -> (Arc<Mutex<Sim>>, Ctx) {
+        let sim = Sim::with_physics(default_network(), EnvCfg::default(), HelmCfg::default(), Box::new(Owned(SimpleBoat::default())));
+        let sim = Arc::new(Mutex::new(sim));
+        let m = Mount { host: "Ghost".into(), back_label: "On deck".into(), back_href: "../".into(), public };
+        (sim.clone(), Ctx::mounted(sim, 8080, m))
+    }
+
+    #[test]
+    fn the_owner_sets_wind_sea_and_steering_and_n2ksim_the_rest() {
+        let (sim, ctx) = mounted(false);
+        let mut s = sim.lock().unwrap();
+        let refused = |r: Result<J, String>| r.expect_err("refused");
+        assert!(refused(post(&mut s, &ctx, "/api/world", &json!({"env": {"tws_kn": 30.0}}))).contains("in Ghost"));
+        refused(post(&mut s, &ctx, "/api/world", &json!({"helm": {"mode": "manual"}})));
+        refused(post(&mut s, &ctx, "/api/preset", &json!({"key": "upwind"})));
+        refused(post(&mut s, &ctx, "/api/control", &json!({"action": "reset_world"})));
+        assert_eq!(s.world.env.tws_kn, EnvCfg::default().tws_kn);
+        // Seabed, air and water are still n2ksim's to change.
+        post(&mut s, &ctx, "/api/world", &json!({"env": {"depth_m": 5.0, "water_temp_c": 9.0}})).unwrap();
+        assert_eq!(s.world.env.depth_m, 5.0);
+        // Loading a saved network keeps the owner's wind.
+        let saved = json!({"network": default_network(), "env": EnvCfg { tws_kn: 3.0, depth_m: 40.0, ..Default::default() }});
+        post(&mut s, &ctx, "/api/load", &saved).unwrap();
+        assert_eq!((s.world.env.tws_kn, s.world.env.depth_m), (EnvCfg::default().tws_kn, 40.0));
+        // The host runs the clock, and there is no saving to its disk.
+        refused(post(&mut s, &ctx, "/api/control", &json!({"action": "pause"})));
+        refused(post(&mut s, &ctx, "/api/control", &json!({"action": "speed", "speed": 5})));
+        refused(post(&mut s, &ctx, "/api/control", &json!({"action": "save"})));
+        // Below deck work goes on as usual.
+        post(&mut s, &ctx, "/api/drill", &json!({"key": "wind_stuck"})).unwrap();
+        let v = snapshot(&s, &ctx, true);
+        assert_eq!(v["owner"], "Ghost");
+        assert_eq!(v["mount"]["back_href"], "../");
+        assert_eq!(v["hosted"], false);
+    }
+
+    /// A host that serves its own page and n2ksim's under /network/, as
+    /// Ghost will.
+    fn host(ctx: Arc<Ctx>) -> u16 {
+        let l = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = l.local_addr().unwrap().port();
+        std::thread::spawn(move || {
+            for stream in l.incoming().flatten() {
+                let ctx = ctx.clone();
+                std::thread::spawn(move || {
+                    let mut reader = BufReader::new(stream.try_clone().unwrap());
+                    let Some(mut head) = read_head(&mut reader) else { return };
+                    match head.target.strip_prefix("/network") {
+                        Some(rest) if rest.starts_with('/') => {
+                            head.target = rest.to_string();
+                            answer(stream, reader, &ctx, head);
+                        }
+                        _ => {
+                            let mut stream = stream;
+                            let _ = stream.write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 4\r\nConnection: close\r\n\r\ndeck");
+                        }
+                    }
+                });
+            }
+        });
+        port
+    }
+
+    fn request(port: u16, req: &str) -> String {
+        let mut s = TcpStream::connect(("127.0.0.1", port)).unwrap();
+        s.write_all(req.as_bytes()).unwrap();
+        let mut out = String::new();
+        let _ = s.read_to_string(&mut out);
+        out
+    }
+
+    #[test]
+    fn a_host_serves_the_page_under_its_own_path() {
+        let (sim, mut ctx) = mounted(true);
+        let port = host(Arc::new({
+            ctx.port = 0;
+            ctx
+        }));
+        let page = request(port, "GET /network/ HTTP/1.1\r\nHost: x\r\n\r\n");
+        assert!(page.starts_with("HTTP/1.1 200") && page.contains("<title>"), "{}", &page[..page.len().min(200)]);
+        assert!(!page.contains("\"/api/"), "the page's paths are relative, so it works under any prefix");
+        let state = request(port, "GET /network/api/state HTTP/1.1\r\nHost: x\r\n\r\n");
+        assert!(state.contains("\"owner\":\"Ghost\""));
+        assert!(request(port, "GET / HTTP/1.1\r\n\r\n").ends_with("deck"));
+
+        // Public: changes only from the host the page came from.
+        let body = r#"{"env":{"depth_m":7}}"#;
+        let post = |origin: &str| request(port, &format!("POST /network/api/world HTTP/1.1\r\nHost: ghost.example\r\nOrigin: {origin}\r\nContent-Length: {}\r\n\r\n{body}", body.len()));
+        assert!(post("https://evil.example").starts_with("HTTP/1.1 403"));
+        assert!(post("https://ghost.example").starts_with("HTTP/1.1 200"));
+        assert_eq!(sim.lock().unwrap().world.env.depth_m, 7.0);
+    }
 }

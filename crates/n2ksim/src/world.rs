@@ -216,10 +216,40 @@ pub trait Physics: Send + Any {
     /// physics that steers by its own means ignores it.
     fn step(&mut self, dt: f64, t: f64, env: &EnvCfg, order: f64, s: &mut State);
 
+    /// The name of the simulator that sets the wind, waves and stream and
+    /// steers the boat, when that is not n2ksim. n2ksim's page then shows
+    /// them read only and refuses changes to them; keep `World::env`'s
+    /// fields for them ([`OWNED_ENV`]) matching your own, for display.
+    fn owner(&self) -> Option<&str> {
+        None
+    }
+
     /// For the simulator that plugged this physics in, to reach its own
     /// type again (see [`World::physics_as`]).
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
+}
+
+/// The fields of [`EnvCfg`] that belong to the boat's physics: wind, waves
+/// and stream. The rest (seabed, air, water, variation, time) are n2ksim's.
+pub const OWNED_ENV: &[&str] = &["tws_kn", "twd_deg", "gust_pct", "shift_deg", "current_kn", "current_set_deg", "wave_height_m", "wave_period_s", "wave_dir_deg"];
+
+impl EnvCfg {
+    /// `new` with the fields in [`OWNED_ENV`] kept from `self`.
+    pub fn with_n2ksim_part_of(&self, new: &EnvCfg) -> EnvCfg {
+        EnvCfg {
+            tws_kn: self.tws_kn,
+            twd_deg: self.twd_deg,
+            gust_pct: self.gust_pct,
+            shift_deg: self.shift_deg,
+            current_kn: self.current_kn,
+            current_set_deg: self.current_set_deg,
+            wave_height_m: self.wave_height_m,
+            wave_period_s: self.wave_period_s,
+            wave_dir_deg: self.wave_dir_deg,
+            ..new.clone()
+        }
+    }
 }
 
 pub struct World {
