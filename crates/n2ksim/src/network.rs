@@ -353,6 +353,12 @@ pub struct DeviceCfg {
     /// unit behaves the same on the bus as off it.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wind_damping_s: Option<f64>,
+    /// A magnetic heading sensor's heeling error: degrees of heading per
+    /// degree of heel on a northerly heading, varying with the cosine of
+    /// the heading. Unset, it is n2ksim's own: 0.15 times the heel on any
+    /// heading, illustrative. Set by a simulator that models its compass.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub heeling_error: Option<f64>,
 }
 
 impl Default for DeviceCfg {
@@ -406,6 +412,7 @@ pub fn template(kind: DeviceKind, id: &str, label: &str, unique: u32) -> DeviceC
         library: String::new(),
         faults: Faults::default(),
         wind_damping_s: None,
+        heeling_error: None,
     }
 }
 

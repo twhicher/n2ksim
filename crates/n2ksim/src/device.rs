@@ -469,8 +469,12 @@ impl Device {
                     let h = wrap_2pi(s.heading + off + self.noise(sd.to_radians()));
                     Builder::new(p).num("sid", self.next_sid()).num("heading", h).num("variation", variation).lookup("reference", 0)
                 } else {
-                    // Magnetic: true minus variation, plus a small heeling error.
-                    let mag = s.heading - variation + 0.15 * s.heel;
+                    // Magnetic: true minus variation, plus a heeling error.
+                    let heeling = match self.cfg.heeling_error {
+                        None => 0.15 * s.heel,
+                        Some(k) => (k * s.heel.to_degrees() * s.heading.cos()).to_radians(),
+                    };
+                    let mag = s.heading - variation + heeling;
                     let h = wrap_2pi(mag + off + self.noise(0.4f64.to_radians()));
                     Builder::new(p).num("sid", self.next_sid()).num("heading", h).lookup("reference", 1)
                 }

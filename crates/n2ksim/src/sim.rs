@@ -675,6 +675,28 @@ mod tests {
         assert!((lo - 0.4..hi + 0.4).contains(&aws), "{aws} not in {lo}..{hi}");
     }
 
+    #[test]
+    fn a_heading_sensor_can_be_given_its_own_heeling_error() {
+        // Our boat heels 0.2 rad to port on 160 degrees, not turning.
+        let mag_heading = |k: Option<f64>| {
+            let mut net = default_network();
+            net.devices.iter_mut().find(|d| d.id == "compass").unwrap().heeling_error = k;
+            let boat = Turning { rate: 0.0, steps: 0, resets: 0, last_order: 0.0 };
+            let mut s = Sim::with_physics(net, EnvCfg::default(), HelmCfg::default(), Box::new(boat));
+            s.run_for(2.0);
+            let m = &s.analyser.stats[&(pgn::HEADING, 3)].msg;
+            assert_eq!(m.lookup("reference"), Some(1));
+            m.num("heading").unwrap()
+        };
+        let var = EnvCfg::default().variation_deg.to_radians();
+        let h = 160f64.to_radians();
+        let near = |a: f64, b: f64| crate::world::wrap_pi(a - b).abs() < 0.03;
+        assert!(near(mag_heading(None), h - var + 0.15 * -0.2), "n2ksim's own");
+        assert!(near(mag_heading(Some(0.0)), h - var), "none");
+        let k = 0.5;
+        assert!(near(mag_heading(Some(k)), h - var + (k * (-0.2f64).to_degrees() * h.cos()).to_radians()), "set");
+    }
+
     /// The default network with a software node at the end of the backbone.
     fn with_node() -> Sim {
         let mut net = default_network();
