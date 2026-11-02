@@ -359,6 +359,21 @@ pub struct DeviceCfg {
     /// heading, illustrative. Set by a simulator that models its compass.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub heeling_error: Option<f64>,
+    /// Things wired straight to this device rather than through the bus
+    /// (a pilot computer's ram drive, say), drawn on the schematic so the
+    /// whole installation shows in one place. n2ksim does not simulate
+    /// them.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub off_bus: Vec<OffBusLink>,
+}
+
+/// One off-bus connection (see `DeviceCfg::off_bus`).
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
+pub struct OffBusLink {
+    pub label: String,
+    /// What it carries, for the drawing's tooltip.
+    pub carries: String,
 }
 
 impl Default for DeviceCfg {
@@ -413,6 +428,7 @@ pub fn template(kind: DeviceKind, id: &str, label: &str, unique: u32) -> DeviceC
         faults: Faults::default(),
         wind_damping_s: None,
         heeling_error: None,
+        off_bus: Vec::new(),
     }
 }
 

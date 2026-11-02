@@ -744,6 +744,9 @@ function layout(W) {
     const dw = Math.min(it.look.w, MAX_W) * s, dh = Math.min(it.look.h, MAX_H) * s;
     it.dw = it.power ? 34 : Math.max(dw, 12); it.dh = it.power ? 40 : Math.max(dh, 10);
     it.w = it.power ? 70 : Math.max(it.dw, plateW); it.h = it.dh + (it.power ? 0 : plateH);
+    // Off-bus connections hang under a device drawn below the backbone.
+    it.offN = it.side === "below" ? (it.d?.cfg.off_bus?.length || 0) : 0;
+    if (it.offN) it.h += 14 + it.offN * 20;
   };
   const fits = () => ["above", "below"].every(side => {
     const g = items.filter(i => i.side === side);
@@ -817,6 +820,21 @@ function initDrag() {
     const g = e.target.closest("[data-id]"); if (!g || g.dataset.id === "__power") return;
     e.preventDefault(); UI.device = g.dataset.id; render();
   });
+}
+
+/* Wired straight to the device, not on the bus: a dashed run down to a
+   strip of labelled terminals. */
+function offBus(it, c, cx) {
+  if (!it.offN) return "";
+  const top = it.y + it.h - (it.offN * 20) - 4, w = Math.min(it.w, 170), x = cx - w / 2;
+  let s = `<line x1="${cx}" y1="${top - 12}" x2="${cx}" y2="${top + it.offN * 20 - 10}" stroke="#000" stroke-dasharray="4 3"/>`;
+  c.off_bus.forEach((l, i) => {
+    const y = top + i * 20;
+    s += `<g><title>${esc(l.label)}: wired straight to ${esc(c.label)}, not on the bus. ${esc(l.carries)}</title>
+      <rect x="${x}" y="${y}" width="${w}" height="16" rx="3" fill="#fff" stroke="#000" stroke-dasharray="4 3"/>
+      <text x="${cx}" y="${y + 11.5}" font-size="10.5" text-anchor="middle">${esc(l.label)}<tspan font-style="italic" style="fill:#767676"> direct</tspan></text></g>`;
+  });
+  return s;
 }
 
 function renderSchematic() {
@@ -897,7 +915,7 @@ function renderSchematic() {
       <rect x="${it.x - 4}" y="${it.y - 4}" width="${it.w + 8}" height="${it.h + 8}" fill="transparent" stroke="${sel ? "#000" : "none"}" stroke-dasharray="5 3"/>
       <g transform="translate(${dx},${dy})">${drawForm(it.look, it.dw, it.dh, live, d)}${bad ? `<rect x="0" y="0" width="${it.dw}" height="${it.dh}" fill="url(#hatch)" opacity=".6"/>` : ""}</g>
       <rect x="${cx - 4}" y="${above ? dy + it.dh - 1 : dy - 6}" width="8" height="7" rx="2" fill="#000"/>
-      ${plate}</g>`;
+      ${plate}${offBus(it, c, cx)}</g>`;
   }
   // Dimension line, to the backbone's scale.
   const step = L > 60 ? 10 : L > 25 ? 5 : L > 10 ? 2 : 1;
