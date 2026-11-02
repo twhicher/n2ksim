@@ -76,6 +76,10 @@ let m = decode(pgn::WIND, &data);
 assert_eq!(m.lookup("reference"), Some(2));
 ```
 
+## Bring your own boat
+
+The built-in boat is simple on purpose. If you have a better model, plug it in and the instruments measure your boat instead: implement `world::Physics` (step by `dt`, write the boat's `State`: position, heading and rates, heel and pitch, heave, speed and leeway, ground track, true and apparent wind at the masthead, rudder) and build the simulation with `Sim::with_physics`. The seabed, temperatures, pressure, magnetic variation and the clock stay n2ksim's. `world.physics_as_mut::<YourBoat>()` gets your model back to steer it or read its truth.
+
 ## Instruments, networks and drills
 
 The library lives in `crates/n2ksim/library/instruments.json`. A library device sends whichever of the real unit's PGNs the simulator can generate, at the documented interval or canboat's usual one; PGNs it cannot generate yet (mostly proprietary ones, AIS and satellites in view) are listed, not sent. Anything the documentation does not give is left out and listed under gaps and conflicts, never guessed.
@@ -114,7 +118,7 @@ railway variables --service n2ksim --set N2KSIM_PASSWORD=...   # optional
 
 ## What it does not do
 
-- The boat is a simple model (first-order yaw, surge towards a placeholder polar, roll as a damped oscillator, waves as three sinusoids). It makes believable, coupled data for the bus; it is not a tool for judging steering performance.
+- The boat is a simple model (first-order yaw, surge towards a placeholder polar, roll as a damped oscillator, waves as three sinusoids). It makes believable, coupled data for the bus; it is not a tool for judging steering performance. Plug in your own model for that (see Bring your own boat).
 - No ISO transport protocol (60160, 60416), no group function (126208) handling, and no proprietary PGNs beyond a babbling device's junk frames.
 - One backbone with one power tee. No NMEA 0183, SignalK, SocketCAN or USB-CAN adapters yet.
 - Error frames are a probability per frame, not a signal-level simulation.

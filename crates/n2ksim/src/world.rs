@@ -14,6 +14,7 @@
 
 use crate::rng::{Ou, Rng};
 use serde::{Deserialize, Serialize};
+use std::any::Any;
 use std::f64::consts::{PI, TAU};
 
 pub const KN: f64 = 1852.0 / 3600.0;
@@ -180,6 +181,7 @@ pub struct State {
     pub tws: f64,
     pub twd: f64,
     pub twa: f64,
+    /// Apparent wind at the masthead, with the mast's motion in it.
     pub aws: f64,
     pub awa: f64,
     pub depth: f64,
@@ -189,15 +191,43 @@ pub struct State {
     pub ram_current: f64,
 }
 
+/// Whatever moves the boat: hull, rig, rudder, wind, waves and stream.
+///
+/// n2ksim's own [`SimpleBoat`] is the default. Another simulator can plug
+/// its own model in (see [`World::with_physics`]) and n2ksim's devices
+/// then measure that boat instead. n2ksim keeps what is not the boat's: the
+/// seabed and depth, temperatures, pressure, humidity, magnetic variation,
+/// date and time, all from [`EnvCfg`].
+///
+/// A physics writes every field of [`State`] except `depth`, which n2ksim
+/// sets from the seabed and `heave` after each step.
+pub trait Physics: Send + Any {
+    /// Simulated seconds per step. The simulation steps in whole
+    /// milliseconds, so this should be a multiple of 0.001.
+    fn dt(&self) -> f64 {
+        0.01
+    }
+
+    /// Put the boat at its starting state, as at the start of a run.
+    fn reset(&mut self, env: &EnvCfg, helm: &HelmCfg, s: &mut State);
+
+    /// Advance by `dt` to time `t`. `order` is the rudder order from
+    /// n2ksim's helm (manual, hold, or angle orders on PGN 127245); a
+    /// physics that steers by its own means ignores it.
+    fn step(&mut self, dt: f64, t: f64, env: &EnvCfg, order: f64, s: &mut State);
+
+    /// For the simulator that plugged this physics in, to reach its own
+    /// type again (see [`World::physics_as`]).
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+}
+
 pub struct World {
     pub env: EnvCfg,
     pub helm: HelmCfg,
     pub s: State,
     pub t: f64,
-    rng: Rng,
-    gust: Ou,
-    shift: Ou,
-    waves: [(f64, f64); 3], // (period factor, phase)
+    physics: Box<dyn Physics>,
     /// Last angle order from the bus and when it arrived.
     pub external_order: Option<(f64, f64)>,
     pub external_timed_out: bool,
@@ -205,29 +235,42 @@ pub struct World {
 }
 
 impl World {
+    /// The world with n2ksim's own simple boat.
     pub fn new(env: EnvCfg, helm: HelmCfg) -> Self {
-        let mut rng = Rng::new(env.seed);
-        let waves = [0.8, 1.0, 1.25].map(|k| (k, rng.range(0.0, TAU)));
+        World::with_physics(env, helm, Box::new(SimpleBoat::default()))
+    }
+
+    /// The world with another simulator's boat.
+    pub fn with_physics(env: EnvCfg, helm: HelmCfg, physics: Box<dyn Physics>) -> Self {
         let mut w = World {
-            s: State {
-                heading: helm.course_deg.to_radians(),
-                bsp: 5.5 * KN,
-                ..Default::default()
-            },
+            s: State::default(),
             env,
             helm,
             t: 0.0,
-            rng,
-            gust: Ou::default(),
-            shift: Ou::default(),
-            waves,
+            physics,
             external_order: None,
             external_timed_out: false,
             hold_int: 0.0,
         };
-        w.update_wind(0.0);
-        w.s.depth = w.depth_at(0.0, 0.0);
+        w.reset();
         w
+    }
+
+    pub fn physics(&self) -> &dyn Physics {
+        self.physics.as_ref()
+    }
+
+    /// The plugged-in physics as its own type, if it is a `T`.
+    pub fn physics_as<T: Physics>(&self) -> Option<&T> {
+        self.physics.as_any().downcast_ref()
+    }
+
+    pub fn physics_as_mut<T: Physics>(&mut self) -> Option<&mut T> {
+        self.physics.as_any_mut().downcast_mut()
+    }
+
+    pub fn physics_dt(&self) -> f64 {
+        self.physics.dt()
     }
 
     pub fn lat_lon(&self) -> (f64, f64) {
@@ -250,27 +293,88 @@ impl World {
         (self.env.depth_m - self.env.shoal_m_per_km * along / 1000.0 + bumps).max(0.3)
     }
 
-    fn update_wind(&mut self, dt: f64) {
-        let g = self.gust.step(dt, 20.0, self.env.gust_pct / 100.0, &mut self.rng);
-        let sh = self.shift.step(dt, 90.0, self.env.shift_deg.to_radians(), &mut self.rng);
-        self.s.tws = (self.env.tws_kn * KN * (1.0 + g)).max(0.0);
-        self.s.twd = wrap_2pi(self.env.twd_deg.to_radians() + sh);
+    /// The rudder order from whoever steers: the manual setting, the
+    /// built-in helmsman, or angle orders from the bus.
+    fn helm_order(&mut self, dt: f64) -> f64 {
+        let s = &self.s;
+        match self.helm.mode {
+            HelmMode::Manual => self.helm.rudder_deg.to_radians(),
+            HelmMode::Hold => {
+                let err = wrap_pi(self.helm.course_deg.to_radians() - s.heading);
+                self.hold_int = (self.hold_int + 0.15 * err * dt).clamp(-0.2, 0.2);
+                1.2 * err + self.hold_int - 4.0 * s.yaw_rate
+            }
+            HelmMode::External => match self.external_order {
+                Some((at, a)) => {
+                    self.external_timed_out = self.t - at > self.helm.order_timeout_s;
+                    a
+                }
+                None => {
+                    self.external_timed_out = true;
+                    s.rudder_order
+                }
+            },
+        }
+    }
+
+    /// One physics step.
+    pub fn step(&mut self, dt: f64) {
+        self.t += dt;
+        let order = self.helm_order(dt);
+        self.physics.step(dt, self.t, &self.env, order, &mut self.s);
+        self.s.depth = self.depth_at(self.s.north, self.s.east) + self.s.heave;
+    }
+
+    /// Back to the start of the run, keeping the configuration.
+    pub fn reset(&mut self) {
+        self.t = 0.0;
+        self.external_order = None;
+        self.external_timed_out = false;
+        self.hold_int = 0.0;
+        self.s = State::default();
+        self.physics.reset(&self.env, &self.helm, &mut self.s);
+        self.s.depth = self.depth_at(self.s.north, self.s.east) + self.s.heave;
+    }
+}
+
+/// n2ksim's own boat, the default [`Physics`]. A deliberately simple model;
+/// see the top of this module.
+#[derive(Clone)]
+pub struct SimpleBoat {
+    rng: Rng,
+    gust: Ou,
+    shift: Ou,
+    waves: [(f64, f64); 3], // (period factor, phase)
+}
+
+impl Default for SimpleBoat {
+    fn default() -> Self {
+        SimpleBoat { rng: Rng::new(1), gust: Ou::default(), shift: Ou::default(), waves: [(1.0, 0.0); 3] }
+    }
+}
+
+impl SimpleBoat {
+    fn update_wind(&mut self, dt: f64, env: &EnvCfg, s: &mut State) {
+        let g = self.gust.step(dt, 20.0, env.gust_pct / 100.0, &mut self.rng);
+        let sh = self.shift.step(dt, 90.0, env.shift_deg.to_radians(), &mut self.rng);
+        s.tws = (env.tws_kn * KN * (1.0 + g)).max(0.0);
+        s.twd = wrap_2pi(env.twd_deg.to_radians() + sh);
         // Ground velocity of the boat.
-        let vn = self.s.sog * self.s.cog.cos();
-        let ve = self.s.sog * self.s.cog.sin();
+        let vn = s.sog * s.cog.cos();
+        let ve = s.sog * s.cog.sin();
         // Wind velocity (towards), ground referenced.
-        let wn = -self.s.tws * self.s.twd.cos();
-        let we = -self.s.tws * self.s.twd.sin();
+        let wn = -s.tws * s.twd.cos();
+        let we = -s.tws * s.twd.sin();
         let (an, ae) = (wn - vn, we - ve);
         // Into body axes, then the masthead swinging with roll: the top of
         // the mast moves to starboard at h * p, so the air seems to come
         // from starboard by that much less.
-        let (sh_, ch) = self.s.heading.sin_cos();
+        let (sh_, ch) = s.heading.sin_cos();
         let ax = an * ch + ae * sh_;
-        let ay = -an * sh_ + ae * ch - BOAT.mast_height * self.s.roll_rate;
-        self.s.aws = (ax * ax + ay * ay).sqrt();
-        self.s.awa = if self.s.aws > 1e-6 { wrap_pi((-ay).atan2(-ax)) } else { 0.0 };
-        self.s.twa = wrap_pi(self.s.twd - self.s.heading);
+        let ay = -an * sh_ + ae * ch - BOAT.mast_height * s.roll_rate;
+        s.aws = (ax * ax + ay * ay).sqrt();
+        s.awa = if s.aws > 1e-6 { wrap_pi((-ay).atan2(-ax)) } else { 0.0 };
+        s.twa = wrap_pi(s.twd - s.heading);
     }
 
     /// Placeholder polar: knots for a true wind speed and angle.
@@ -289,9 +393,9 @@ impl World {
         vmax * shape
     }
 
-    fn wave_sum(&self, t: f64, deriv: bool) -> f64 {
+    fn wave_sum(&self, period: f64, t: f64, deriv: bool) -> f64 {
         let a = 1.0 / 3f64.sqrt();
-        let period = self.env.wave_period_s.max(1.0);
+        let period = period.max(1.0);
         self.waves
             .iter()
             .map(|(k, ph)| {
@@ -304,35 +408,28 @@ impl World {
             })
             .sum()
     }
+}
 
-    /// One physics step.
-    pub fn step(&mut self, dt: f64) {
-        self.t += dt;
-        let t = self.t;
-        self.update_wind(dt);
-        let w0 = self.wave_sum(t, false);
-        let w1 = self.wave_sum(t, true);
-        let s = &mut self.s;
-
-        // Rudder order from whoever steers, then the ram's rate limit.
-        let order = match self.helm.mode {
-            HelmMode::Manual => self.helm.rudder_deg.to_radians(),
-            HelmMode::Hold => {
-                let err = wrap_pi(self.helm.course_deg.to_radians() - s.heading);
-                self.hold_int = (self.hold_int + 0.15 * err * dt).clamp(-0.2, 0.2);
-                1.2 * err + self.hold_int - 4.0 * s.yaw_rate
-            }
-            HelmMode::External => match self.external_order {
-                Some((at, a)) => {
-                    self.external_timed_out = t - at > self.helm.order_timeout_s;
-                    a
-                }
-                None => {
-                    self.external_timed_out = true;
-                    s.rudder_order
-                }
-            },
+impl Physics for SimpleBoat {
+    fn reset(&mut self, env: &EnvCfg, helm: &HelmCfg, s: &mut State) {
+        self.rng = Rng::new(env.seed);
+        self.waves = [0.8, 1.0, 1.25].map(|k| (k, self.rng.range(0.0, TAU)));
+        self.gust = Ou::default();
+        self.shift = Ou::default();
+        *s = State {
+            heading: helm.course_deg.to_radians(),
+            bsp: 5.5 * KN,
+            ..Default::default()
         };
+        self.update_wind(0.0, env, s);
+    }
+
+    fn step(&mut self, dt: f64, t: f64, env: &EnvCfg, order: f64, s: &mut State) {
+        self.update_wind(dt, env, s);
+        let w0 = self.wave_sum(env.wave_period_s, t, false);
+        let w1 = self.wave_sum(env.wave_period_s, t, true);
+
+        // The ram's rate limit.
         s.rudder_order = order.clamp(-BOAT.rudder_max, BOAT.rudder_max);
         let before = s.rudder;
         let step = (s.rudder_order - s.rudder).clamp(-BOAT.ram_rate * dt, BOAT.ram_rate * dt);
@@ -341,9 +438,9 @@ impl World {
         s.ram_current = 0.3 + 3.0 * rate / BOAT.ram_rate + 0.15 * s.bsp * s.bsp * s.rudder.abs();
 
         // Waves: elevation, and slopes that roll, pitch and yaw the boat.
-        let hs = self.env.wave_height_m;
+        let hs = env.wave_height_m;
         let sigma = hs / 4.0;
-        let rel = wrap_pi(self.env.wave_dir_deg.to_radians() - s.heading);
+        let rel = wrap_pi(env.wave_dir_deg.to_radians() - s.heading);
         s.heave = -sigma * 2f64.sqrt() * w0;
         let roll_wave = 0.06 * hs * rel.sin() * w0;
         let pitch_wave = 0.04 * hs * rel.cos() * w0;
@@ -357,7 +454,7 @@ impl World {
         s.heading = wrap_2pi(s.heading + s.yaw_rate * dt);
 
         // Surge towards the polar, less rudder drag.
-        let target = World::polar_kn(s.tws / KN, s.twa) * KN * (1.0 - 0.6 * s.rudder * s.rudder);
+        let target = SimpleBoat::polar_kn(s.tws / KN, s.twa) * KN * (1.0 - 0.6 * s.rudder * s.rudder);
         s.bsp += (target - s.bsp) * dt / BOAT.surge_tau;
         s.bsp = s.bsp.max(0.0);
 
@@ -378,8 +475,8 @@ impl World {
         // Ground track: water track plus the stream.
         let ct = s.heading + s.leeway;
         let vw = s.bsp / s.leeway.cos();
-        let cur = self.env.current_kn * KN;
-        let cs = self.env.current_set_deg.to_radians();
+        let cur = env.current_kn * KN;
+        let cs = env.current_set_deg.to_radians();
         let vn = vw * ct.cos() + cur * cs.cos();
         let ve = vw * ct.sin() + cur * cs.sin();
         s.north += vn * dt;
@@ -387,13 +484,14 @@ impl World {
         s.sog = (vn * vn + ve * ve).sqrt();
         s.cog = wrap_2pi(ve.atan2(vn));
         s.log_m += s.bsp * dt;
-        let (n, e) = (s.north, s.east);
-        let heave = s.heave;
-        self.s.depth = self.depth_at(n, e) + heave;
     }
 
-    pub fn reset(&mut self) {
-        *self = World::new(self.env.clone(), self.helm.clone());
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 

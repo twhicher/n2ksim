@@ -1,6 +1,7 @@
 //! The whole simulation: world, devices, the bus between them, and the
-//! analyser listening to it. Time advances in 1 ms steps; physics runs at
-//! 100 Hz; frames are timed to the bit.
+//! analyser listening to it. Time advances in 1 ms steps; the boat's
+//! physics at its own step (10 ms for n2ksim's own boat); frames are timed
+//! to the bit.
 
 use crate::analyser::Analyser;
 use crate::bus::frame_bits;
@@ -9,12 +10,11 @@ use crate::device::{DevState, Device, Origin, TxFrame};
 use crate::network::{DeviceKind, Network};
 use crate::power::{voltages, Load, LEN_AMPS, MIN_VOLTS};
 use crate::rng::Rng;
-use crate::world::{EnvCfg, HelmCfg, World};
+use crate::world::{EnvCfg, HelmCfg, Physics, World};
 use n2k::Frame;
 use std::collections::VecDeque;
 
 pub const DT: f64 = 0.001;
-const PHYS_DT: f64 = 0.01;
 const RING: usize = 200_000;
 
 #[derive(Clone, Debug)]
@@ -85,10 +85,20 @@ pub struct Sim {
 
 impl Sim {
     pub fn new(net: Network, env: EnvCfg, helm: HelmCfg) -> Self {
-        let seed = env.seed;
+        Sim::with_world(net, World::new(env, helm))
+    }
+
+    /// The simulation with another simulator's boat in place of n2ksim's
+    /// own. See [`Physics`].
+    pub fn with_physics(net: Network, env: EnvCfg, helm: HelmCfg, physics: Box<dyn Physics>) -> Self {
+        Sim::with_world(net, World::with_physics(env, helm, physics))
+    }
+
+    fn with_world(net: Network, world: World) -> Self {
+        let seed = world.env.seed;
         let mut sim = Sim {
             devices: Vec::new(),
-            world: World::new(env, helm),
+            world,
             analyser: Analyser::default(),
             t: 0.0,
             paused: false,
@@ -234,12 +244,13 @@ impl Sim {
         let t = self.t;
 
         self.phys_acc += DT;
-        while self.phys_acc >= PHYS_DT - 1e-9 {
-            self.phys_acc -= PHYS_DT;
+        let phys_dt = self.world.physics_dt();
+        while self.phys_acc >= phys_dt - 1e-9 {
+            self.phys_acc -= phys_dt;
             if let Some(d) = self.devices.iter().find(|d| d.cfg.kind == DeviceKind::Rudder && d.cfg.library.is_empty() && d.cfg.enabled) {
                 self.world.external_order = d.last_order.map(|(at, a, _)| (at, a));
             }
-            self.world.step(PHYS_DT);
+            self.world.step(phys_dt);
         }
 
         if t >= self.next_power_t {
@@ -546,6 +557,75 @@ mod tests {
         assert!(!s.world.external_timed_out);
         s.run_for(2.0);
         assert!(s.world.external_timed_out);
+    }
+
+    /// A stand-in for another simulator's boat: it turns steadily at a
+    /// rate it is told, at a fixed heel, in a fixed wind, and remembers
+    /// what it was given.
+    struct Turning {
+        rate: f64,
+        steps: u32,
+        resets: u32,
+        last_order: f64,
+    }
+
+    impl crate::world::Physics for Turning {
+        fn dt(&self) -> f64 {
+            0.001
+        }
+        fn reset(&mut self, _env: &EnvCfg, helm: &HelmCfg, s: &mut crate::world::State) {
+            self.resets += 1;
+            s.heading = helm.course_deg.to_radians();
+            s.heel = -0.2;
+            s.bsp = 3.0;
+            s.aws = 8.0;
+            s.awa = 0.6;
+            s.heave = 0.5;
+        }
+        fn step(&mut self, dt: f64, _t: f64, _env: &EnvCfg, order: f64, s: &mut crate::world::State) {
+            self.steps += 1;
+            self.last_order = order;
+            s.yaw_rate = self.rate;
+            s.heading = crate::world::wrap_2pi(s.heading + self.rate * dt);
+            s.north += s.bsp * dt;
+        }
+        fn as_any(&self) -> &dyn std::any::Any {
+            self
+        }
+        fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+            self
+        }
+    }
+
+    #[test]
+    fn plugged_in_physics_drives_the_sensors() {
+        let helm = HelmCfg { mode: crate::world::HelmMode::Manual, rudder_deg: 5.0, ..Default::default() };
+        let boat = Turning { rate: 0.05, steps: 0, resets: 0, last_order: 0.0 };
+        let mut s = Sim::with_physics(default_network(), EnvCfg::default(), helm, Box::new(boat));
+        s.run_for(5.0);
+
+        // Stepped at its own 1 ms, in lockstep with the bus.
+        let b = s.world.physics_as::<Turning>().expect("our physics");
+        assert_eq!(b.steps, 5000);
+        assert_eq!(b.resets, 1);
+        assert!((b.last_order - 5f64.to_radians()).abs() < 1e-12, "the helm's order reaches the physics");
+
+        // The devices measure our boat, not n2ksim's own.
+        let num = |pgn: u32, src: u8, f: &str| s.analyser.stats[&(pgn, src)].msg.num(f).unwrap_or_else(|| panic!("{pgn}/{src} {f}"));
+        assert!((num(pgn::RATE_OF_TURN, 3, "rate") - 0.05).abs() < 0.01);
+        assert!((num(pgn::ATTITUDE, 3, "roll") + 0.2).abs() < 0.01);
+        assert!((num(pgn::WIND, 5, "windSpeed") - 8.0).abs() < 0.6);
+        // n2ksim keeps the seabed: depth under the keel follows our boat's
+        // position and heave.
+        let n = s.world.s.north;
+        assert!((n - 15.0).abs() < 0.01, "north {n}");
+        assert!((s.world.s.depth - (s.world.depth_at(n, 0.0) + 0.5)).abs() < 1e-9);
+
+        // Reaching our own type again, and a reset reaches the physics.
+        s.world.physics_as_mut::<Turning>().unwrap().rate = 0.0;
+        s.world.reset();
+        assert_eq!(s.world.physics_as::<Turning>().unwrap().resets, 2);
+        assert!(s.world.physics_as::<crate::world::SimpleBoat>().is_none());
     }
 
     impl crate::network::DeviceCfg {
