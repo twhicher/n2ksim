@@ -145,6 +145,8 @@ pub struct Device {
     hb_seq: u8,
     stuck: HashMap<(u32, String), Vec<u8>>,
     wind_lag: (f64, f64),
+    /// When this device last sent wind, for a damping set in seconds.
+    wind_t: Option<f64>,
     stw_lag: f64,
     pos_err: (Ou, Ou),
     rng: Rng,
@@ -191,6 +193,7 @@ impl Device {
             hb_seq: 0,
             stuck: HashMap::new(),
             wind_lag: (0.0, 0.0),
+            wind_t: None,
             stw_lag: 0.0,
             pos_err: (Ou::default(), Ou::default()),
             seen: HashMap::new(),
@@ -480,9 +483,17 @@ impl Device {
             // Sign not stated by canboat; sent positive up. Check against a real unit.
             HEAVE => Builder::new(p).num("sid", self.next_sid()).num("heave", -s.heave + self.noise(0.02)).num("delay", 0.0).lookup("delaySource", 2),
             WIND => {
-                // Damped apparent wind (about 0.8 s here), then true wind
-                // from it where asked.
-                let a = 0.1 / (0.8 + 0.1);
+                // Damped apparent wind (about 0.8 s at 10 Hz unless the
+                // device sets its own), then true wind from it where asked.
+                let now = w.t;
+                let a = match self.cfg.wind_damping_s {
+                    None => 0.1 / (0.8 + 0.1),
+                    Some(tau) => match self.wind_t {
+                        Some(t0) if tau > 0.0 => 1.0 - (-(now - t0).max(0.0) / tau).exp(),
+                        _ => 1.0,
+                    },
+                };
+                self.wind_t = Some(now);
                 let (x, y) = (s.aws * s.awa.cos(), s.aws * s.awa.sin());
                 self.wind_lag.0 += a * (x - self.wind_lag.0);
                 self.wind_lag.1 += a * (y - self.wind_lag.1);

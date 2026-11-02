@@ -347,6 +347,12 @@ pub struct DeviceCfg {
     /// Instrument library key, empty for a generic device.
     pub library: String,
     pub faults: Faults,
+    /// A wind sensor's internal damping, seconds (first order). Unset, it
+    /// is n2ksim's own: about 0.8 s at 10 Hz, illustrative. A simulator
+    /// that plugs in its own boat sets its masthead unit's here, so the
+    /// unit behaves the same on the bus as off it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub wind_damping_s: Option<f64>,
 }
 
 impl Default for DeviceCfg {
@@ -399,6 +405,7 @@ pub fn template(kind: DeviceKind, id: &str, label: &str, unique: u32) -> DeviceC
         rx_pgns: Vec::new(),
         library: String::new(),
         faults: Faults::default(),
+        wind_damping_s: None,
     }
 }
 

@@ -659,6 +659,22 @@ mod tests {
         assert!(s.world.physics_as::<crate::world::SimpleBoat>().is_none());
     }
 
+    #[test]
+    fn a_wind_sensor_can_be_given_its_own_damping() {
+        let mut net = default_network();
+        net.devices.iter_mut().find(|d| d.id == "wind").unwrap().wind_damping_s = Some(0.45);
+        let boat = Turning { rate: 0.0, steps: 0, resets: 0, last_order: 0.0 };
+        let mut s = Sim::with_physics(net, EnvCfg::default(), HelmCfg::default(), Box::new(boat));
+        s.run_for(5.0);
+        // A step from 8 to 12 m/s: after 0.45 s, about 63% of the way,
+        // give or take one 0.1 s sample and the sensor's noise.
+        s.world.s.aws = 12.0;
+        s.run_for(0.45);
+        let aws = s.analyser.stats[&(pgn::WIND, 5)].msg.num("windSpeed").unwrap();
+        let (lo, hi) = (8.0 + 4.0 * (1.0 - (-0.3f64 / 0.45).exp()), 8.0 + 4.0 * (1.0 - (-0.55f64 / 0.45).exp()));
+        assert!((lo - 0.4..hi + 0.4).contains(&aws), "{aws} not in {lo}..{hi}");
+    }
+
     /// The default network with a software node at the end of the backbone.
     fn with_node() -> Sim {
         let mut net = default_network();
